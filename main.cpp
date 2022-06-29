@@ -1,8 +1,8 @@
 #include <iostream>
-#include "smt-switch/bitwuzla_factory.h"
+#include "smt-switch/boolector_factory.h"
 
 int main() {
-    smt::SmtSolver s = smt::BitwuzlaSolverFactory::create(false);
+    auto s = smt::BoolectorSolverFactory::create(false);
     return 0;
 }
 
