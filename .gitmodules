@@ -1,0 +1,3 @@
+[submodule "smt-switch"]
+	path = smt-switch
+	url = https://github.com/Moorvan/smt-switch.git
