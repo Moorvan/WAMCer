@@ -5,7 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 add_executable(WAMCer
         main.cpp)
 add_library(WAMCer-lib
-        main.cpp)
+        main.cpp
+        frontends/btor2_encoder.cpp
+        core/ts.cpp
+        core/unroller.cpp
+        utils/logger.cpp
+        engines/bmc.cpp
+        )
 
 
 # link smt-switch and gmp
@@ -23,7 +29,9 @@ target_link_libraries(WAMCer-lib PUBLIC
 
 target_include_directories(WAMCer-lib PUBLIC
         smt-switch/local/include
-        ${GMP_INCLUDE_DIR})
+        smt-switch/deps/boolector/deps/btor2tools/src
+        ${GMP_INCLUDE_DIR}
+        ${PROJECT_SOURCE_DIR})
 
 target_link_libraries(WAMCer PUBLIC WAMCer-lib)
 
