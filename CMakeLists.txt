@@ -9,6 +9,7 @@ add_library(WAMCer-lib
         frontends/btor2_encoder.cpp
         core/ts.cpp
         core/unroller.cpp
+        core/runner.cpp
         utils/logger.cpp
         engines/bmc.cpp
         )

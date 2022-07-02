@@ -41,6 +41,8 @@ class TransitionSystem
         functional_(false),
         deterministic_(false)
   {
+      solver_->set_opt("incremental", "true");
+      solver_->set_opt("produce-models", "true");
   }
 
   TransitionSystem(const smt::SmtSolver & s)

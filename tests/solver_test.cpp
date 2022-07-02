@@ -21,13 +21,18 @@ TEST(SolverLearningTests, Syntax) {
     s->set_opt("incremental", "true");
     s->set_opt("produce-models", "true");
     auto bv8Sort = s->make_sort(BV, 8);
-    auto funcSort = s->make_sort(FUNCTION, {bv8Sort, bv8Sort});
+    auto funcSort = s->make_sort(FUNCTION, {bv8Sort, bv8Sort, bv8Sort});
     auto f = s->make_symbol("f", funcSort);
-    auto t1 = s->make_term(Equal, s->make_term(Apply, f, s->make_term(1, bv8Sort)), s->make_term(1, bv8Sort));
-    s->assert_formula(t1);
+    auto x = s->make_symbol("x", bv8Sort);
+    auto t1 = s->make_term(Equal, s->make_term(Apply, {f, s->make_term(1, bv8Sort), x}), s->make_term(1, bv8Sort));
+    auto t2 = s->make_term(Equal, s->make_term(Apply, {f, s->make_term(1, bv8Sort), s->make_term(1, bv8Sort)}), s->make_term(2, bv8Sort));
+    auto t3 = s->make_term(Equal, x, s->make_term(1, bv8Sort));
+    s->assert_formula(s->make_term(And, {t1, t2, t3}));
     auto res = s->check_sat();
     if (res.is_sat()) {
         cout << s->get_value(f) << endl;
+    } else {
+        logger.log(0, "unsat");
     }
 }
 
@@ -41,5 +46,8 @@ TEST(Btor2Tests, Btor2Parser) {
     BTOR2Encoder be(path, ts);
     logger.log(0, ts.trans()->to_string());
     auto unroller = Unroller(ts);
-    logger.log(0, unroller.at_time(ts.trans(), 0)->to_string());
+    auto init0 = unroller.at_time(ts.init(), 0);
+    logger.log(0, init0->to_string());
+    auto solver = ts.solver();
+    solver->assert_formula(init0);
 }
