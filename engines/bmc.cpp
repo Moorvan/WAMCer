@@ -6,14 +6,27 @@
 
 
 namespace wamcer {
+    BMC::BMC(TransitionSystem &ts, Term &p, int &bound)
+            : transitionSystem(ts),
+              property(p),
+              solver(ts.solver()),
+              unroller(ts),
+              safeStep(bound),
+              safeStepInt(-1) {
+        safeStep = -1;
+    }
+
     BMC::BMC(TransitionSystem &ts, Term &p)
             : transitionSystem(ts),
               property(p),
               solver(ts.solver()),
-              unroller(ts) {}
+              unroller(ts),
+              safeStepInt(-1),
+              safeStep(safeStepInt){}
 
     bool BMC::run(int bound) {
         logger.log(1, "init: {}", transitionSystem.init());
+        logger.log(3, "trans: {}", transitionSystem.trans());
         logger.log(1, "prop: {}", property);
 
         if (!step0()) {
@@ -22,6 +35,7 @@ namespace wamcer {
         } else {
             logger.log(1, "Check safe at init step.");
         }
+        safeStep = 0;
 
         if (bound == 0) {
             return true;
@@ -33,11 +47,11 @@ namespace wamcer {
                 return false;
             } else {
                 logger.log(1, "Check safe at {} step.", i);
+                safeStep = i;
             }
         }
         logger.log(1, "Safe in {} steps.", bound);
         return true;
-
     }
 
     bool BMC::step0() {
@@ -70,4 +84,6 @@ namespace wamcer {
             return true;
         }
     }
+
+
 }

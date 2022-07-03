@@ -5,12 +5,15 @@
 
 #include <iostream>
 #include <gtest/gtest.h>
+#include <thread>
+#include <chrono>
 #include "smt-switch/bitwuzla_factory.h"
 #include "smt-switch/smt.h"
 #include "utils/logger.h"
 #include "core/ts.h"
 #include "frontends/btor2_encoder.h"
 #include "core/unroller.h"
+#include "core/runner.h"
 
 using namespace smt;
 using namespace std;
@@ -51,3 +54,55 @@ TEST(Btor2Tests, Btor2Parser) {
     auto solver = ts.solver();
     solver->assert_formula(init0);
 }
+
+TEST(MultiThreadTests, KInduction) {
+    logger.set_verbosity(3);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
+//    Runner::runBMC(path);
+    auto ts = TransitionSystem();
+    auto p = BTOR2Encoder(path, ts).propvec().at(0);
+    int safe = 10;
+    auto kind = KInduction(ts, p, safe);
+    std::thread t([&] {
+        kind.run();
+    });
+
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(2s);
+    safe++;
+
+    t.join();
+//    kind.run();
+//    safe = 11;
+//    kind.run();
+}
+
+TEST(MultiThreadTests, NotifyWaitLearning) {
+    auto mux = std::mutex();
+    auto cv = std::condition_variable();
+
+    auto f = [&]() {
+        logger.log(0, "f()");
+        auto lck = std::unique_lock<std::mutex>(mux);
+        cv.wait(lck);
+        logger.log(0, "wake up!");
+    };
+
+    auto g = [&]() {
+        logger.log(0, "g()");
+        auto lck = std::unique_lock<std::mutex>(mux);
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(2s);
+        logger.log(0, "WAKE~");
+        cv.notify_all();
+    };
+
+    auto t0 = std::thread(f);
+    auto t00 = std::thread(f);
+    auto t1 = std::thread(g);
+
+    t0.join();
+    t00.join();
+    t1.join();
+}
+

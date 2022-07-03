@@ -12,6 +12,7 @@ add_library(WAMCer-lib
         core/runner.cpp
         utils/logger.cpp
         engines/bmc.cpp
+        engines/k_induction.cpp
         )
 
 

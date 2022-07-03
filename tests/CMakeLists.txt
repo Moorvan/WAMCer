@@ -8,15 +8,16 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable( solver_test
-        solver_test.cpp)
+add_executable( wamcerTests
+        solver_test.cpp
+        engines_test.cpp)
 
-target_link_libraries( solver_test
+target_link_libraries( wamcerTests
         gtest_main
         WAMCer-lib)
 
 include(GoogleTest)
 gtest_discover_tests(
-        solver_test)
+        wamcerTests)
 
 include_directories(../)
