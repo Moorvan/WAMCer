@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <core/runner.h>
+#include <engines/k_induction.h>
 #include <thread>
 #include <chrono>
 
@@ -26,4 +27,18 @@ TEST(BMCTests, SafeStep) {
         logger.log(0, "safe step: {}", step);
     }
     t.join();
+}
+
+TEST(KInductionTests, SingleKInd) {
+    logger.set_verbosity(2);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
+    auto step = 10;
+    auto ts = TransitionSystem();
+    auto p = BTOR2Encoder(path, ts).propvec().at(0);
+    auto kind = KInduction(ts, p, step);
+    if (kind.run()) {
+        logger.log(0, "Proved: IS INVARIANT.");
+    } else {
+        logger.log(0, "Unknown.");
+    }
 }
