@@ -14,7 +14,8 @@ using namespace smt;
 namespace wamcer {
     class KInduction {
     public:
-        KInduction(TransitionSystem &transitionSystem, Term &property, int &safeBound);
+        KInduction(TransitionSystem &transitionSystem, Term &property, int &safeBound, std::mutex &mux, std::condition_variable& cv);
+        KInduction(TransitionSystem &transitionSystem, Term &property);
         bool run(int bound = -1);
 
     private:
@@ -22,7 +23,13 @@ namespace wamcer {
         TransitionSystem transitionSystem;
         Term property;
         Unroller unroller;
-        int &safeBound;
+
+        int safeBound;
+        int &safeBoundRef;
+        std::mutex mux;
+        std::mutex& muxRef;
+        std::condition_variable cv;
+        std::condition_variable& cvRef;
 
         // prove if property is n-inductive invariant
         bool stepN(int n);

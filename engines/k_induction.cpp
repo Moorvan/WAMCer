@@ -6,18 +6,26 @@
 
 
 namespace wamcer {
-    KInduction::KInduction(TransitionSystem &ts, Term &property, int &safeBound) :
-            transitionSystem(ts),
-            solver(ts.solver()),
-            property(property),
-            unroller(ts),
-            safeBound(safeBound) {}
+    KInduction::KInduction(TransitionSystem &ts, Term &p, int &safeBound, std::mutex &mux,
+                           std::condition_variable &cv)
+            : transitionSystem(ts),
+              solver(ts.solver()),
+              property(p),
+              unroller(ts),
+              safeBound(-1),
+              safeBoundRef(safeBound),
+              muxRef(mux),
+              cvRef(cv) {}
+
+    KInduction::KInduction(TransitionSystem &ts, Term &p)
+            : KInduction(ts, p, safeBound, mux, cv) {}
 
     bool KInduction::run(int bound) {
         if (bound == 0) {
             return false;
         }
         for (int i = 1; i != bound; i++) {
+
             if (stepN(i)) {
                 logger.log(1, "Proved: property is {}-inductive-invariant.", i);
                 return true;

@@ -10,7 +10,8 @@ enable_testing()
 
 add_executable( wamcerTests
         solver_test.cpp
-        engines_test.cpp)
+        engines_test.cpp
+        utils_test.cpp)
 
 target_link_libraries( wamcerTests
         gtest_main

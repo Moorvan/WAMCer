@@ -6,36 +6,34 @@
 
 
 namespace wamcer {
-    BMC::BMC(TransitionSystem &ts, Term &p, int &bound)
+    BMC::BMC(TransitionSystem &ts, Term &p, int& safeStep, std::mutex& mux, std::condition_variable& cv)
             : transitionSystem(ts),
               property(p),
               solver(ts.solver()),
               unroller(ts),
-              safeStep(bound),
-              safeStepInt(-1) {
-        safeStep = -1;
+              safeStep(-1),
+              safeStepRef(safeStep),
+              muxRef(mux),
+              cvRef(cv) {
+        safeStepRef = -1;
     }
 
     BMC::BMC(TransitionSystem &ts, Term &p)
-            : transitionSystem(ts),
-              property(p),
-              solver(ts.solver()),
-              unroller(ts),
-              safeStepInt(-1),
-              safeStep(safeStepInt){}
+            : BMC(ts, p, safeStep, mux, cv) {}
 
     bool BMC::run(int bound) {
         logger.log(1, "init: {}", transitionSystem.init());
         logger.log(3, "trans: {}", transitionSystem.trans());
         logger.log(1, "prop: {}", property);
-
+//        auto lck = std::unique_lock<std::mutex>(muxRef);
+//        cvRef.wait(lck);
         if (!step0()) {
             logger.log(1, "Check failed at init step.");
             return false;
         } else {
             logger.log(1, "Check safe at init step.");
         }
-        safeStep = 0;
+        safeStepRef = 0;
 
         if (bound == 0) {
             return true;
@@ -47,7 +45,7 @@ namespace wamcer {
                 return false;
             } else {
                 logger.log(1, "Check safe at {} step.", i);
-                safeStep = i;
+                safeStepRef = i;
             }
         }
         logger.log(1, "Safe in {} steps.", bound);

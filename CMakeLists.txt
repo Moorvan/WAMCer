@@ -11,6 +11,7 @@ add_library(WAMCer-lib
         core/unroller.cpp
         core/runner.cpp
         utils/logger.cpp
+        utils/timer.cpp
         engines/bmc.cpp
         engines/k_induction.cpp
         )

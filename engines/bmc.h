@@ -14,7 +14,7 @@ using namespace smt;
 namespace wamcer {
     class BMC {
     public:
-        BMC(TransitionSystem &transitionSystem, Term &property, int& safeStep);
+        BMC(TransitionSystem &transitionSystem, Term &property, int& safeStep, std::mutex& mux, std::condition_variable& cv);
         BMC(TransitionSystem &transitionSystem, Term &property);
 
         bool run(int bound);
@@ -25,8 +25,12 @@ namespace wamcer {
         Term property;
         Unroller unroller;
 
-        int safeStepInt;
-        int& safeStep;
+        int safeStep;
+        int& safeStepRef;
+        std::mutex mux;
+        std::mutex& muxRef;
+        std::condition_variable cv;
+        std::condition_variable& cvRef;
 
         bool step0();
         bool stepN(int n);

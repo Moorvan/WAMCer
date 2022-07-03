@@ -62,7 +62,9 @@ TEST(MultiThreadTests, KInduction) {
     auto ts = TransitionSystem();
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
     int safe = 10;
-    auto kind = KInduction(ts, p, safe);
+    auto mux = std::mutex();
+    auto cv = std::condition_variable();
+    auto kind = KInduction(ts, p, safe, mux, cv);
     std::thread t([&] {
         kind.run();
     });
@@ -72,9 +74,6 @@ TEST(MultiThreadTests, KInduction) {
     safe++;
 
     t.join();
-//    kind.run();
-//    safe = 11;
-//    kind.run();
 }
 
 TEST(MultiThreadTests, NotifyWaitLearning) {
