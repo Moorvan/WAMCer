@@ -12,27 +12,33 @@ namespace wamcer {
               solver(ts.solver()),
               property(p),
               unroller(ts),
-              safeBound(-1),
+              safeBound(int()),
               safeBoundRef(safeBound),
               muxRef(mux),
               cvRef(cv) {}
 
     KInduction::KInduction(TransitionSystem &ts, Term &p)
-            : KInduction(ts, p, safeBound, mux, cv) {}
+            : KInduction(ts, p, safeBound, mux, cv) {
+        safeBoundRef = defines::allStepSafe;
+    }
 
     bool KInduction::run(int bound) {
         if (bound == 0) {
             return false;
         }
         for (int i = 1; i != bound; i++) {
-
+            while (i > safeBoundRef + 1 && safeBoundRef != defines::allStepSafe) {
+                auto lck = std::unique_lock(muxRef);
+                cvRef.wait(lck);
+            }
             if (stepN(i)) {
-                logger.log(1, "Proved: property is {}-inductive-invariant.", i);
+                logger.log(defines::logKind, 1, "Proved: property is {}-inductive-invariant.", i);
                 return true;
             } else {
-                logger.log(1, "{}-inductive check: Failed.", i);
+                logger.log(defines::logKind, 1, "{}-inductive check: Failed.", i);
             }
         }
+        return false;
     }
 
     bool KInduction::stepN(int n) {
@@ -75,7 +81,7 @@ namespace wamcer {
                 for (int l = j + 1; l <= n; l++) {
                     Term constraint = simplePathConstraint(j, l);
                     if (solver->get_value(constraint) == solver->make_term(false)) {
-                        logger.log(2, "add simple path constraint: state_{} and state_{}.", j, l);
+                        logger.log(defines::logKind, 2, "add simple path constraint: state_{} and state_{}.", j, l);
                         solver->assert_formula(constraint);
                         addSimplePathConstraint = true;
                         break;

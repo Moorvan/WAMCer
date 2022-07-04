@@ -38,88 +38,73 @@
 std::string remove_curly_brackets(std::string s);
 
 // Term
-template <>
-struct fmt::formatter<smt::Term>
-{
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext & ctx)
-  {
-    return ctx.begin();
-  }
+template<>
+struct fmt::formatter<smt::Term> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
 
-  template <typename FormatContext>
-  auto format(const smt::Term & t, FormatContext & ctx)
-  {
-    return format_to(ctx.out(), remove_curly_brackets(t->to_string()));
-  }
+    template<typename FormatContext>
+    auto format(const smt::Term &t, FormatContext &ctx) {
+        return format_to(ctx.out(), remove_curly_brackets(t->to_string()));
+    }
 };
 
 // Sort
-template <>
-struct fmt::formatter<smt::Sort>
-{
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext & ctx)
-  {
-    return ctx.begin();
-  }
+template<>
+struct fmt::formatter<smt::Sort> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
 
-  template <typename FormatContext>
-  auto format(const smt::Sort & s, FormatContext & ctx)
-  {
-    return format_to(ctx.out(), remove_curly_brackets(s->to_string()));
-  }
+    template<typename FormatContext>
+    auto format(const smt::Sort &s, FormatContext &ctx) {
+        return format_to(ctx.out(), remove_curly_brackets(s->to_string()));
+    }
 };
 
 // PrimOp
-template <>
-struct fmt::formatter<smt::PrimOp>
-{
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext & ctx)
-  {
-    return ctx.begin();
-  }
+template<>
+struct fmt::formatter<smt::PrimOp> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
 
-  template <typename FormatContext>
-  auto format(const smt::PrimOp & po, FormatContext & ctx)
-  {
-    return format_to(ctx.out(), smt::to_string(po));
-  }
+    template<typename FormatContext>
+    auto format(const smt::PrimOp &po, FormatContext &ctx) {
+        return format_to(ctx.out(), smt::to_string(po));
+    }
 };
 
 // Op
-template <>
-struct fmt::formatter<smt::Op>
-{
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext & ctx)
-  {
-    return ctx.begin();
-  }
+template<>
+struct fmt::formatter<smt::Op> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
 
-  template <typename FormatContext>
-  auto format(const smt::Op & o, FormatContext & ctx)
-  {
-    return format_to(ctx.out(), o.to_string());
-  }
+    template<typename FormatContext>
+    auto format(const smt::Op &o, FormatContext &ctx) {
+        return format_to(ctx.out(), o.to_string());
+    }
 };
 
 // Result
-template <>
-struct fmt::formatter<smt::Result>
-{
-  template <typename ParseContext>
-  constexpr auto parse(ParseContext & ctx)
-  {
-    return ctx.begin();
-  }
+template<>
+struct fmt::formatter<smt::Result> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
 
-  template <typename FormatContext>
-  auto format(const smt::Result & r, FormatContext & ctx)
-  {
-    return format_to(ctx.out(), r.to_string());
-  }
+    template<typename FormatContext>
+    auto format(const smt::Result &r, FormatContext &ctx) {
+        return format_to(ctx.out(), r.to_string());
+    }
 };
 
 /*********************** End overloaded methods for printing smt-switch objects
@@ -131,70 +116,69 @@ struct fmt::formatter<smt::Result>
 
 namespace wamcer {
 
-class Log
-{
- public:
-  Log() : verbosity(0), verbosity_set(false) {}
+    class Log {
+    public:
+        Log() : verbosity(0), verbosity_set(false) {}
 
-  Log(size_t v) : verbosity(v), verbosity_set(true) {}
+        Log(size_t v) : verbosity(v), verbosity_set(true) {}
 
-  /* Logs to the terminal using Python-style format string
-   * @param level the verbosity level to print this log (prints for any
-   * verbosity greater than this level)
-   * @param format the format string
-   * @param args comma separated list of inputs for the format string
-   */
-  template <typename... Args>
-  void log(size_t level, const std::string & format, const Args &... args) const
-  {
-    if (level <= verbosity)
-    {
-      std::cout << fmt::format(format, args...) << std::endl;
-    }
-  }
+        /* Logs to the terminal using Python-style format string
+         * @param level the verbosity level to print this log (prints for any
+         * verbosity greater than this level)
+         * @param format the format string
+         * @param args comma separated list of inputs for the format string
+         */
+        template<typename... Args>
+        void log(size_t level, const std::string &format, const Args &... args) const {
+            if (level <= verbosity) {
+                std::cout << fmt::format(format, args...) << std::endl;
+            }
+        }
 
-  /* Logs to the terminal using Python-style format string in a range of
-   * verbosities: [lower, upper]
-   * @param lower the lower cutoff for verbosity
-   * @param upper the upper cutoff for verbosity
-   * @param format the format string
-   * @param args comma separated list of inputs for the format string
-   */
-  template <typename... Args>
-  void log(size_t lower,
-           size_t upper,
-           const std::string & format,
-           const Args &... args) const
-  {
-    if ((lower <= verbosity) && (verbosity <= upper))
-    {
-      std::cout << fmt::format(format, args...) << std::endl;
-    }
-  }
+        template<typename... Args>
+        void log(const std::string& prefix, size_t level, const std::string &format, const Args &... args) const {
+            if (level <= verbosity) {
+                std::cout << prefix << fmt::format(format, args...) << std::endl;
+            }
+        }
 
-  /* set verbosity -- can only be set once
-   * @param v the verbosity to set
-   */
-  void set_verbosity(size_t v)
-  {
-    if (!verbosity_set)
-    {
-      verbosity = v;
-    }
-    else
-    {
-      throw PonoException("Can only set logger verbosity once.");
-    }
-  }
 
- protected:
-  size_t verbosity;
-  bool verbosity_set;
-};
+        /* Logs to the terminal using Python-style format string in a range of
+         * verbosities: [lower, upper]
+         * @param lower the lower cutoff for verbosity
+         * @param upper the upper cutoff for verbosity
+         * @param format the format string
+         * @param args comma separated list of inputs for the format string
+         */
+        template<typename... Args>
+        void log(size_t lower,
+                 size_t upper,
+                 const std::string &format,
+                 const Args &... args) const {
+            if ((lower <= verbosity) && (verbosity <= upper)) {
+                std::cout << fmt::format(format, args...) << std::endl;
+            }
+        }
+
+        /* set verbosity -- can only be set once
+         * @param v the verbosity to set
+         */
+        void set_verbosity(size_t v) {
+            if (!verbosity_set) {
+                verbosity = v;
+            } else {
+                throw PonoException("Can only set logger verbosity once.");
+            }
+        }
+
+    protected:
+        size_t verbosity;
+        bool verbosity_set;
+    };
 
 // globally avaiable logger instance
-extern Log logger;
+    extern Log logger;
 
-void set_global_logger_verbosity(size_t v);
+    void set_global_logger_verbosity(size_t v);
 
 }  // namespace pono

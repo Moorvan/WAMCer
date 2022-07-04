@@ -28,7 +28,8 @@ TEST(SolverLearningTests, Syntax) {
     auto f = s->make_symbol("f", funcSort);
     auto x = s->make_symbol("x", bv8Sort);
     auto t1 = s->make_term(Equal, s->make_term(Apply, {f, s->make_term(1, bv8Sort), x}), s->make_term(1, bv8Sort));
-    auto t2 = s->make_term(Equal, s->make_term(Apply, {f, s->make_term(1, bv8Sort), s->make_term(1, bv8Sort)}), s->make_term(2, bv8Sort));
+    auto t2 = s->make_term(Equal, s->make_term(Apply, {f, s->make_term(1, bv8Sort), s->make_term(1, bv8Sort)}),
+                           s->make_term(2, bv8Sort));
     auto t3 = s->make_term(Equal, x, s->make_term(1, bv8Sort));
     s->assert_formula(s->make_term(And, {t1, t2, t3}));
     auto res = s->check_sat();
@@ -56,7 +57,7 @@ TEST(Btor2Tests, Btor2Parser) {
 }
 
 TEST(MultiThreadTests, KInduction) {
-    logger.set_verbosity(3);
+    logger.set_verbosity(1);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
 //    Runner::runBMC(path);
     auto ts = TransitionSystem();
@@ -71,8 +72,10 @@ TEST(MultiThreadTests, KInduction) {
 
     using namespace std::chrono_literals;
     std::this_thread::sleep_for(2s);
+    logger.log(defines::logTest, 0, "sleep over.");
     safe++;
-
+    cv.notify_all();
+    logger.log(defines::logTest, 0, "after notify");
     t.join();
 }
 
@@ -89,7 +92,7 @@ TEST(MultiThreadTests, NotifyWaitLearning) {
 
     auto g = [&]() {
         logger.log(0, "g()");
-        auto lck = std::unique_lock<std::mutex>(mux);
+//        auto lck = std::unique_lock<std::mutex>(mux);
         using namespace std::chrono_literals;
         std::this_thread::sleep_for(2s);
         logger.log(0, "WAKE~");
@@ -105,3 +108,28 @@ TEST(MultiThreadTests, NotifyWaitLearning) {
     t1.join();
 }
 
+
+TEST(MultiThreadTests, WaitAndJoin) {
+    auto mux = std::mutex();
+    auto cv = std::condition_variable();
+    auto finished = std::atomic<int>{-1};
+    auto t1 = std::thread([&] {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        finished = 0;
+        cv.notify_all();
+    });
+    auto t2 = std::thread([&] {
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        finished = 1;
+        cv.notify_all();
+    });
+    auto lck = std::unique_lock(mux);
+    cv.wait(lck);
+    if (finished == 1) {
+        logger.log(0, "t2 finished");
+    }
+    if (finished == 0) {
+        logger.log(0, "t1 finished");
+    }
+    exit(0);
+}

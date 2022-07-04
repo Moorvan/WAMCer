@@ -52,6 +52,8 @@ class TransitionSystem
         functional_(false),
         deterministic_(false)
   {
+      solver_->set_opt("incremental", "true");
+      solver_->set_opt("produce-models", "true");
   }
 
   friend void swap(TransitionSystem & ts1, TransitionSystem & ts2);

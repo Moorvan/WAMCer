@@ -7,6 +7,7 @@
 
 #include <thread>
 #include <chrono>
+#include "utils/logger.h"
 
 namespace timer {
     [[noreturn]] void wakeEvery(int seconds, std::condition_variable& cv);

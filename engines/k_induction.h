@@ -7,7 +7,7 @@
 
 #include "core/unroller.h"
 #include "utils/logger.h"
-
+#include "utils/defines.h"
 
 using namespace smt;
 

@@ -6,7 +6,7 @@
 
 
 namespace wamcer {
-    BMC::BMC(TransitionSystem &ts, Term &p, int& safeStep, std::mutex& mux, std::condition_variable& cv)
+    BMC::BMC(TransitionSystem &ts, Term &p, int &safeStep, std::mutex &mux, std::condition_variable &cv)
             : transitionSystem(ts),
               property(p),
               solver(ts.solver()),
@@ -15,23 +15,21 @@ namespace wamcer {
               safeStepRef(safeStep),
               muxRef(mux),
               cvRef(cv) {
-        safeStepRef = -1;
+        safeStepRef = defines::noStepSafe;
     }
 
     BMC::BMC(TransitionSystem &ts, Term &p)
             : BMC(ts, p, safeStep, mux, cv) {}
 
     bool BMC::run(int bound) {
-        logger.log(1, "init: {}", transitionSystem.init());
-        logger.log(3, "trans: {}", transitionSystem.trans());
-        logger.log(1, "prop: {}", property);
-//        auto lck = std::unique_lock<std::mutex>(muxRef);
-//        cvRef.wait(lck);
+        logger.log(defines::logBMC, 1, "init: {}", transitionSystem.init());
+        logger.log(defines::logBMC, 3, "trans: {}", transitionSystem.trans());
+        logger.log(defines::logBMC, 1, "prop: {}", property);
         if (!step0()) {
-            logger.log(1, "Check failed at init step.");
+            logger.log(defines::logBMC, 1, "Check failed at init step.");
             return false;
         } else {
-            logger.log(1, "Check safe at init step.");
+            logger.log(defines::logBMC, 1, "Check safe at init step.");
         }
         safeStepRef = 0;
 
@@ -41,29 +39,29 @@ namespace wamcer {
 
         for (int i = 1; i != bound; i++) {
             if (!stepN(i)) {
-                logger.log(1, "Check failed at {} step.", i);
+                logger.log(defines::logBMC, 1, "Check failed at {} step.", i);
                 return false;
             } else {
-                logger.log(1, "Check safe at {} step.", i);
+                logger.log(defines::logBMC, 1, "Check safe at {} step.", i);
                 safeStepRef = i;
             }
         }
-        logger.log(1, "Safe in {} steps.", bound);
+        logger.log(defines::logBMC, 1, "Safe in {} steps.", bound);
         return true;
     }
 
     bool BMC::step0() {
         auto init0 = unroller.at_time(transitionSystem.init(), 0);
-        logger.log(2, "init0: {}", init0);
+        logger.log(defines::logBMC, 2, "init0: {}", init0);
         solver->assert_formula(init0);
         auto prop0 = unroller.at_time(property, 0);
         auto bad0 = solver->make_term(Not, prop0);
         auto res = solver->check_sat_assuming({bad0});
         if (res.is_sat()) {
-            logger.log(2, "init0 /\\ bad0 is sat.");
+            logger.log(defines::logBMC, 2, "init0 /\\ bad0 is sat.");
             return false;
         } else {
-            logger.log(2, "init0 /\\ bad0 is unsat.");
+            logger.log(defines::logBMC, 2, "init0 /\\ bad0 is unsat.");
             return true;
         }
     }
@@ -75,10 +73,10 @@ namespace wamcer {
         auto badN = solver->make_term(Not, propN);
         auto res = solver->check_sat_assuming({badN});
         if (res.is_sat()) {
-            logger.log(2, "init0 /\\ trans...{} /\\ bad{} is sat.", n, n);
+            logger.log(defines::logBMC, 2, "init0 /\\ trans...{} /\\ bad{} is sat.", n, n);
             return false;
         } else {
-            logger.log(2, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
+            logger.log(defines::logBMC, 2, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
             return true;
         }
     }

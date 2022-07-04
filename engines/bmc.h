@@ -7,6 +7,7 @@
 
 #include "core/unroller.h"
 #include "utils/logger.h"
+#include "utils/defines.h"
 
 using namespace smt;
 
@@ -17,7 +18,7 @@ namespace wamcer {
         BMC(TransitionSystem &transitionSystem, Term &property, int& safeStep, std::mutex& mux, std::condition_variable& cv);
         BMC(TransitionSystem &transitionSystem, Term &property);
 
-        bool run(int bound);
+        bool run(int bound = -1);
 
     private:
         SmtSolver solver;
