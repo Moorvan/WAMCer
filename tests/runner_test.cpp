@@ -11,5 +11,10 @@ TEST(RunnerTests, RunBMC) {
     logger.set_verbosity(1);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
     Runner::runBMC(path);
+}
 
+TEST(RunnerTests, RunBMCWithKind) {
+    logger.set_verbosity(1);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
+    Runner::runBMCWithKInduction(path, 150);
 }
