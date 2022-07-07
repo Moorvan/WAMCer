@@ -12,7 +12,9 @@ add_executable( wamcerTests
         solver_test.cpp
         engines_test.cpp
         utils_test.cpp
-        runner_test.cpp)
+        runner_test.cpp
+        cases_test.cpp
+        cases/counter.cpp)
 
 target_link_libraries( wamcerTests
         gtest_main
@@ -22,4 +24,7 @@ include(GoogleTest)
 gtest_discover_tests(
         wamcerTests)
 
-include_directories(../)
+include_directories(
+        ../
+        ./
+        )

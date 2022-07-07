@@ -4,6 +4,7 @@
 
 #ifndef WAMCER_RUNNER_H
 #define WAMCER_RUNNER_H
+
 #include <thread>
 #include "frontends/btor2_encoder.h"
 #include "engines/bmc.h"
@@ -15,12 +16,18 @@
 namespace wamcer {
     class Runner {
     public:
-        static bool runBMC(const std::string& path, int bound = -1);
+        static bool runBMC(const std::string &path, int bound = -1);
+
         static bool runBMCWithKInduction(const std::string &path, int bound = -1);
 
+        static bool runBMCWithKInduction(void (*TSGen)(TransitionSystem& transitionSystem, Term& property), int bound = -1);
+
     private:
-        static bool BMCWithKInductionBMCPart(const std::string &path, int bound, int& safe, std::mutex& mux, std::condition_variable& cv);
-        static bool BMCWithKInductionKindPart(const std::string &path, int bound, int& safe, std::mutex& mux, std::condition_variable& cv);
+        static bool BMCWithKInductionBMCPart(const std::string &path, int bound, int &safe, std::mutex &mux,
+                                             std::condition_variable &cv);
+
+        static bool BMCWithKInductionKindPart(const std::string &path, int bound, int &safe, std::mutex &mux,
+                                              std::condition_variable &cv);
     };
 }
 
