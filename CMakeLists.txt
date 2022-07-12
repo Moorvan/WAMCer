@@ -14,6 +14,7 @@ add_library(WAMCer-lib
         utils/timer.cpp
         engines/bmc.cpp
         engines/k_induction.cpp
+        engines/pdr.cpp
         )
 
 

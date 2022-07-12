@@ -6,9 +6,9 @@
 
 
 namespace timer {
-    [[noreturn]] void wakeEvery(int seconds, std::condition_variable& cv) {
+    [[noreturn]] void wakeEvery(long long seconds, std::condition_variable& cv) {
         while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(seconds));
+            std::this_thread::sleep_for(std::chrono::milliseconds(seconds));
             cv.notify_all();
         }
     }

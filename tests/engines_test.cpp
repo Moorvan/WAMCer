@@ -53,7 +53,9 @@ TEST(KInductionTests, SingleKInd) {
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
     auto ts = TransitionSystem();
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
-    auto kind = KInduction(ts, p);
+    auto tsCopy = TransitionSystem::copy(ts);
+    auto pCopy = tsCopy.add_term(p);
+    auto kind = KInduction(tsCopy, pCopy);
     if (kind.run()) {
         logger.log(0, "Proved: IS INVARIANT.");
     } else {

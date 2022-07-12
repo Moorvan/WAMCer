@@ -16,5 +16,5 @@ TEST(RunnerTests, RunBMC) {
 TEST(RunnerTests, RunBMCWithKind) {
     logger.set_verbosity(1);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
-    Runner::runBMCWithKInduction(path, 150);
+    Runner::runBMCWithKInduction(path, 104);
 }
