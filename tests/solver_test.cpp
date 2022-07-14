@@ -8,6 +8,7 @@
 #include <thread>
 #include <chrono>
 #include "smt-switch/bitwuzla_factory.h"
+#include "smt-switch/boolector_factory.h"
 #include "smt-switch/smt.h"
 #include "utils/logger.h"
 #include "core/ts.h"
@@ -182,3 +183,5 @@ TEST(SolverLearningTests, Simplify) {
         logger.log(0, "t: {}", t);
     }
 }
+
+

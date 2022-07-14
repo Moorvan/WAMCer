@@ -7,4 +7,13 @@
 
 namespace wamcer {
 
+    EasyPDR::EasyPDR(TransitionSystem &ts, Term &p)
+            : transitionSystem(ts),
+              solver(ts.solver()),
+              property(p),
+              unroller(ts.solver()) {}
+
+    bool EasyPDR::run(int bound) {
+
+    }
 }

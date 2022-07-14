@@ -38,3 +38,12 @@ TEST(ConfigTest, GetValue) {
     logger.log(0, "wakeKindCycle: {}", config::wakeKindCycle);
 
 }
+
+TEST(LoggerTest, Verbose) {
+    logger.set_verbosity(1);
+    auto t0 = std::thread([&] {
+        logger.set_verbosity(2);
+    });
+    t0.join();
+    logger.log(2, "adaffsdadf");
+}

@@ -12,8 +12,17 @@
 using namespace smt;
 
 namespace wamcer {
-    class pdr {
+    class EasyPDR {
+    public:
+        EasyPDR(TransitionSystem &transitionSystem, Term &property);
 
+        bool run(int bound = -1);
+
+    private:
+        SmtSolver solver;
+        TransitionSystem transitionSystem;
+        Term property;
+        Unroller unroller;
     };
 }
 
