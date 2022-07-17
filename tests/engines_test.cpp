@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include <core/runner.h>
 #include <engines/k_induction.h>
+#include "engines/pdr.h"
 #include <thread>
 #include <chrono>
 #include "utils/timer.h"
@@ -102,4 +103,13 @@ TEST(KInductionWithBMC, KindWithBMC) {
         logger.log(0, "Something wrong.");
     }
     exit(0);
+}
+
+TEST(EasyPDRTests, EasyPDR) {
+    logger.set_verbosity(2);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
+    auto ts = TransitionSystem();
+    auto p = BTOR2Encoder(path, ts).propvec().at(0);
+    auto pdr = EasyPDR(ts, p);
+    pdr.run();
 }

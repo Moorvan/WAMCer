@@ -9,6 +9,7 @@
 #include <chrono>
 #include "smt-switch/bitwuzla_factory.h"
 #include "smt-switch/boolector_factory.h"
+#include "smt-switch/z3_factory.h"
 #include "smt-switch/smt.h"
 #include "utils/logger.h"
 #include "core/ts.h"
@@ -184,4 +185,6 @@ TEST(SolverLearningTests, Simplify) {
     }
 }
 
-
+TEST(Z3Testers, Z3) {
+    auto s = BitwuzlaSolverFactory::create(false);
+}

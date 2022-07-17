@@ -28,6 +28,7 @@ target_link_libraries(WAMCer-lib PUBLIC
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch.a
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-btor.a
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-bitwuzla.a
+#        ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-z3.a
         ${GMPXX_LIBRARIES}
         ${GMP_LIBRARIES})
 

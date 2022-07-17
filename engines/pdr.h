@@ -8,6 +8,7 @@
 #include "core/unroller.h"
 #include "utils/logger.h"
 #include "utils/defines.h"
+#include "k_induction.h"
 
 using namespace smt;
 
@@ -22,7 +23,14 @@ namespace wamcer {
         SmtSolver solver;
         TransitionSystem transitionSystem;
         Term property;
+        Term candidateInv;
+        Term invLabel;
         Unroller unroller;
+
+        bool stepN(int n);
+        void blockModel();
+        Term getModel();
+
     };
 }
 
