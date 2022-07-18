@@ -6,6 +6,7 @@
 #include <core/runner.h>
 #include <engines/k_induction.h>
 #include "engines/pdr.h"
+#include "smt-switch/boolector_factory.h"
 #include <thread>
 #include <chrono>
 #include "utils/timer.h"
@@ -108,7 +109,8 @@ TEST(KInductionWithBMC, KindWithBMC) {
 TEST(EasyPDRTests, EasyPDR) {
     logger.set_verbosity(2);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
-    auto ts = TransitionSystem();
+    auto s = BoolectorSolverFactory::create(false);
+    auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
     auto pdr = EasyPDR(ts, p);
     pdr.run();

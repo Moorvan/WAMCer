@@ -19,6 +19,7 @@
 #include "core/ts.h"
 
 #include "smt-switch/smt.h"
+#include "utils/logger.h"
 
 namespace wamcer {
 

@@ -188,3 +188,22 @@ TEST(SolverLearningTests, Simplify) {
 TEST(Z3Testers, Z3) {
     auto s = BitwuzlaSolverFactory::create(false);
 }
+
+TEST(SolverTests, UnsatCore) {
+    auto s = BitwuzlaSolverFactory::create(false);
+    s->set_opt("incremental", "true");
+    s->set_opt("produce-models", "true");
+    auto a = s->make_symbol("a", s->make_sort(BOOL));
+    auto b = s->make_symbol("b", s->make_sort(BOOL));
+//    s->assert_formula(a);
+//    s->assert_formula(s->make_term(Not, a));
+    auto res = s->check_sat_assuming({a, b, s->make_term(Not, a)});
+    auto out = UnorderedTermSet();
+    if (res.is_unsat()) {
+        s->get_unsat_assumptions(out);
+        for (auto t : out) {
+            logger.log(0, "{}", t);
+        }
+    }
+
+}

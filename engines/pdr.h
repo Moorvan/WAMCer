@@ -24,12 +24,14 @@ namespace wamcer {
         TransitionSystem transitionSystem;
         Term property;
         Term candidateInv;
+        Term invPrim;
         Term invLabel;
         Unroller unroller;
 
         bool stepN(int n);
         void blockModel();
-        Term getModel();
+        void getModel(TermVec &stateAssigns, TermVec &inputAssign);
+        Term getModelCore(const TermVec& states, const TermVec& inputs);
 
     };
 }
