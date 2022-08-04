@@ -15,6 +15,7 @@ add_library(WAMCer-lib
         engines/bmc.cpp
         engines/k_induction.cpp
         engines/pdr.cpp
+        engines/fbmc.cpp
         )
 
 

@@ -13,6 +13,7 @@ namespace defines {
     const auto logBMCRunner = "[BMC Runner]: ";
     const auto logBMCKindRunner = "[BMC + K-Induction]: ";
     const auto logTest = "[TEST]: ";
+    const auto logFBMC = "[FBMC]: ";
 
     // special bound/step
     const auto noStepSafe = -1;

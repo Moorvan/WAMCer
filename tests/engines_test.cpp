@@ -6,6 +6,7 @@
 #include <core/runner.h>
 #include <engines/k_induction.h>
 #include "engines/pdr.h"
+#include "engines/fbmc.h"
 #include "smt-switch/boolector_factory.h"
 #include <thread>
 #include <chrono>
@@ -114,4 +115,41 @@ TEST(EasyPDRTests, EasyPDR) {
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
     auto pdr = EasyPDR(ts, p);
     pdr.run();
+}
+
+TEST(FBMCTests, FBMC) {
+    logger.set_verbosity(2);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
+    auto s = BitwuzlaSolverFactory::create(false);
+    auto ts = TransitionSystem(s);
+    auto p = BTOR2Encoder(path, ts).propvec().at(0);
+    auto preds = UnorderedTermSet();
+    auto safeStep = int();
+    auto mux = std::mutex();
+    auto cv = std::condition_variable();
+    auto pred_s = BitwuzlaSolverFactory::create(false);
+    auto to_pred = TermTranslator(pred_s);
+    auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred);
+    fbmc.run();
+}
+
+TEST(test, test) {
+    auto s1 = BitwuzlaSolverFactory::create(false);
+//    auto s2 = BitwuzlaSolverFactory::create(false);
+//    auto to_s1 = TermTranslator(s1);
+//    auto x = s2->make_symbol("x", s2->make_sort(BOOL));
+//    auto x_s1 = to_s1.transfer_term(x);
+
+//    auto s = std::vector<int>();
+//    s.push_back(1);
+//    s.push_back(2);
+//    logger.log(0, "{}", s.size());
+
+    auto bv8 = s1->make_sort(BV, 8);
+    auto a = s1->make_symbol("a", bv8);
+    auto b = s1->make_symbol("b", bv8);
+    auto t = s1->make_term(BVUge, a, b);
+    logger.log(0, "{}", t);
+    logger.log(0, "{}", t->get_sort());
+    logger.log(0, "{}", t->get_op());
 }
