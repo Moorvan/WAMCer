@@ -134,7 +134,7 @@ TEST(FBMCTests, FBMC) {
 }
 
 TEST(test, test) {
-    auto s1 = BitwuzlaSolverFactory::create(false);
+    auto s1 = BoolectorSolverFactory::create(false);
 //    auto s2 = BitwuzlaSolverFactory::create(false);
 //    auto to_s1 = TermTranslator(s1);
 //    auto x = s2->make_symbol("x", s2->make_sort(BOOL));
@@ -152,4 +152,15 @@ TEST(test, test) {
     logger.log(0, "{}", t);
     logger.log(0, "{}", t->get_sort());
     logger.log(0, "{}", t->get_op());
+    auto bv1 = s1->make_sort(BV, 1);
+    auto bool_ = s1->make_sort(BOOL);
+    if (t->get_sort() == bv1) {
+        logger.log(0, "t.sort() is bv1");
+    }
+    if (t->get_sort() == bool_) {
+        logger.log(0, "t.sort() is bool");
+    }
+    if (a->get_sort() == bool_) {
+        logger.log(0, "dsfaError");
+    }
 }

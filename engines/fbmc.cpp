@@ -28,46 +28,42 @@ namespace wamcer {
     }
 
     void FBMC::predicateCollect() {
-        auto p = property;
-        logger.log(defines::logFBMC, 1, "p = {}", p);
 
-        auto preds = UnorderedTermSet();
+        auto atomicPreds = UnorderedTermSet();
+        auto bv1 = transitionSystem.make_sort(BV, 1);
+        auto bool_ = transitionSystem.make_sort(BOOL);
 
         std::function<void(Term)> dfs = [&](Term t) {
-//            if (t->get_op() == Op()) {
-            logger.log(1, "op: {}", t->get_op());
-            logger.log(1, "term: {}", t);
-            logger.log(1, "term sort: {}", t->get_sort());
-
-//            }
-            if (t->is_symbol()) {
-                preds.insert(t);
+            if (t->get_op() == Op()) {
+                if (t->get_sort() == bv1 or t->get_sort() == bool_) {
+                    atomicPreds.insert(t);
+                }
                 return;
             }
 
-
+            auto hasOnlySymbol = true;
             for (auto v: t) {
-                logger.log(1, "dfs v: {}", v);
+                if (v->get_op() != Op()) {
+                    hasOnlySymbol = false;
+                }
                 dfs(v);
+            }
+            if (hasOnlySymbol) {
+                if (t->get_sort() == bv1 or t->get_sort() == bool_) {
+                    atomicPreds.insert(t);
+                }
             }
         };
 
-//        dfs(p);
+        dfs(transitionSystem.init());
         dfs(transitionSystem.trans());
+        dfs(property);
 
-        logger.log(defines::logFBMC, 1, "preds: ");
-        for (auto v: preds) {
+        logger.log(defines::logFBMC, 1, "atomicPreds: ");
+        for (auto v: atomicPreds) {
             logger.log(defines::logFBMC, 1, "v: {}", v);
+            preds.insert(to_preds.transfer_term(v));
         }
-
-//        if (!p->is_symbol()) {
-//            for (auto i: p) {
-//                logger.log(defines::logFBMC, 2, "v = {}", i);
-//                for (auto j : i) {
-//
-//                }
-//            }
-//        }
     }
 
 }
