@@ -130,11 +130,14 @@ TEST(FBMCTests, FBMC) {
     auto pred_s = BitwuzlaSolverFactory::create(false);
     auto to_pred = TermTranslator(pred_s);
     auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred);
-    fbmc.run();
+    fbmc.run(20);
+//    for (auto v : preds) {
+//        logger.log(1, "pred: {}", v);
+//    }
 }
 
 TEST(test, test) {
-    auto s1 = BoolectorSolverFactory::create(false);
+    auto s1 = BitwuzlaSolverFactory::create(false);
 //    auto s2 = BitwuzlaSolverFactory::create(false);
 //    auto to_s1 = TermTranslator(s1);
 //    auto x = s2->make_symbol("x", s2->make_sort(BOOL));
@@ -145,22 +148,27 @@ TEST(test, test) {
 //    s.push_back(2);
 //    logger.log(0, "{}", s.size());
 
-    auto bv8 = s1->make_sort(BV, 8);
-    auto a = s1->make_symbol("a", bv8);
-    auto b = s1->make_symbol("b", bv8);
-    auto t = s1->make_term(BVUge, a, b);
-    logger.log(0, "{}", t);
-    logger.log(0, "{}", t->get_sort());
-    logger.log(0, "{}", t->get_op());
+//    auto bv8 = s1->make_sort(BV, 8);
+//    auto a = s1->make_symbol("a", bv8);
+//    auto b = s1->make_symbol("b", bv8);
+//    auto t = s1->make_term(BVUge, a, b);
+//    logger.log(0, "{}", t);
+//    logger.log(0, "{}", t->get_sort());
+//    logger.log(0, "{}", t->get_op());
     auto bv1 = s1->make_sort(BV, 1);
     auto bool_ = s1->make_sort(BOOL);
-    if (t->get_sort() == bv1) {
-        logger.log(0, "t.sort() is bv1");
-    }
-    if (t->get_sort() == bool_) {
-        logger.log(0, "t.sort() is bool");
-    }
-    if (a->get_sort() == bool_) {
-        logger.log(0, "dsfaError");
-    }
+//    if (t->get_sort() == bv1) {
+//        logger.log(0, "t.sort() is bv1");
+//    }
+//    if (t->get_sort() == bool_) {
+//        logger.log(0, "t.sort() is bool");
+//    }
+//    if (a->get_sort() == bool_) {
+//        logger.log(0, "dsfaError");
+//    }
+
+    auto a = s1->make_symbol("a", bool_);
+    auto b = s1->make_symbol("b", bool_);
+    auto t0 = s1->make_term(And, a, b);
+    logger.log(0, "t0 = {}", t0);
 }

@@ -33,6 +33,11 @@ namespace wamcer {
 
         void predicateCollect();
 
+        bool step0();
+        bool stepN(int n);
+
+        void FilterPredsAt(int step);
+
     };
 }
 
