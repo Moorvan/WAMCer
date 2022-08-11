@@ -147,5 +147,9 @@ namespace wamcer {
         return false;
     }
 
+    bool Runner::runFBMCWithKInduction(void (*TSGen)(TransitionSystem &, Term &), int bound) {
+
+    }
+
 
 }

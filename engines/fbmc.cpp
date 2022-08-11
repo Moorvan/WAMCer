@@ -17,7 +17,8 @@ namespace wamcer {
             property(property),
             solver(ts.solver()),
             unroller(ts),
-            to_preds(to_preds) {}
+            to_preds(to_preds),
+            to_solver(solver) {}
 
     bool FBMC::run(int bound) {
         logger.log(defines::logFBMC, 1, "init: {}", transitionSystem.init());
@@ -25,7 +26,8 @@ namespace wamcer {
         logger.log(defines::logFBMC, 1, "prop: {}", property);
         predicateCollect();
 
-        if(!step0()) {
+        logger.log(defines::logFBMC, 1, "The initialization has {} preds.", preds.size());
+        if (!step0()) {
             logger.log(defines::logFBMC, 0, "Check failed at init step.");
             return false;
         } else {
@@ -56,7 +58,7 @@ namespace wamcer {
         auto bv1 = transitionSystem.make_sort(BV, 1);
         auto bool_ = transitionSystem.make_sort(BOOL);
 
-        for (auto v : transitionSystem.statevars()) {
+        for (auto v: transitionSystem.statevars()) {
             if (v->get_sort() == bv1 or v->get_sort() == bool_) {
                 atomicPreds.insert(v);
             }
@@ -71,7 +73,7 @@ namespace wamcer {
                 } else if (transitionSystem.is_next_var(v)) {
                     hasOnlyCurSymbol = false;
                 }
-           }
+            }
             if (hasOnlyCurSymbol) {
                 if (t->get_sort() == bv1 or t->get_sort() == bool_) {
                     atomicPreds.insert(t);
@@ -84,7 +86,7 @@ namespace wamcer {
         dfs(property);
 
         logger.log(defines::logFBMC, 2, "atomic preds: ");
-        for (auto v : atomicPreds) {
+        for (auto v: atomicPreds) {
             logger.log(defines::logFBMC, 2, "{}", v);
         }
 
@@ -94,7 +96,7 @@ namespace wamcer {
 
         for (auto v1: atomicPreds) {
             for (auto v2: atomicPreds) {
-                for (auto r : atomicPreds) {
+                for (auto r: atomicPreds) {
                     auto v1AndV2 = transitionSystem.make_term(BVAnd, v1, v2);
                     auto pred = transitionSystem.make_term(Implies, v1AndV2, r);
                     preds.insert(to_preds.transfer_term(pred));
@@ -105,16 +107,17 @@ namespace wamcer {
 
     bool FBMC::step0() {
         auto init0 = unroller.at_time(transitionSystem.init(), 0);
-        logger.log(defines::logBMC, 1, "init0: {}", init0);
+        logger.log(defines::logFBMC, 1, "init0: {}", init0);
         solver->assert_formula(init0);
         auto prop0 = unroller.at_time(property, 0);
         auto bad0 = solver->make_term(Not, prop0);
         auto res = solver->check_sat_assuming({bad0});
         if (res.is_sat()) {
-            logger.log(defines::logBMC, 1, "init0 /\\ bad0 is sat.");
+            logger.log(defines::logFBMC, 1, "init0 /\\ bad0 is sat.");
             return false;
         } else {
-            logger.log(defines::logBMC, 1, "init0 /\\ bad0 is unsat.");
+            logger.log(defines::logFBMC, 1, "init0 /\\ bad0 is unsat.");
+            filterPredsAt(0);
             return true;
         }
     }
@@ -126,15 +129,28 @@ namespace wamcer {
         auto badN = solver->make_term(Not, propN);
         auto res = solver->check_sat_assuming({badN});
         if (res.is_sat()) {
-            logger.log(defines::logBMC, 1, "init0 /\\ trans...{} /\\ bad{} is sat.", n, n);
+            logger.log(defines::logFBMC, 1, "init0 /\\ trans...{} /\\ bad{} is sat.", n, n);
             return false;
         } else {
-            logger.log(defines::logBMC, 1, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
+            logger.log(defines::logFBMC, 1, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
+            filterPredsAt(n);
             return true;
         }
     }
 
-    void FBMC::FilterPredsAt(int step) {
-//        solver->get_value()
+    void FBMC::filterPredsAt(int step) {
+        auto notPass = TermVec();
+        for (auto v: preds) {
+            auto slv_v = to_solver.transfer_term(v);
+            auto v_at_step = unroller.at_time(slv_v, step);
+            auto not_v = solver->make_term(Not, v_at_step);
+            auto res = solver->check_sat_assuming({not_v});
+            if (res.is_sat()) {
+                notPass.push_back(v);
+            }
+        }
+        for (auto v : notPass) {
+            preds.erase(v);
+        }
     }
 }

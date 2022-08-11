@@ -25,6 +25,7 @@ namespace wamcer {
         Term property;
         Unroller unroller;
         TermTranslator& to_preds;
+        TermTranslator to_solver;
 
         int &safeStep;
         std::mutex& mux;
@@ -36,7 +37,7 @@ namespace wamcer {
         bool step0();
         bool stepN(int n);
 
-        void FilterPredsAt(int step);
+        void filterPredsAt(int step);
 
     };
 }

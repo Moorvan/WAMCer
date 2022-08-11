@@ -22,6 +22,9 @@ namespace wamcer {
 
         static bool runBMCWithKInduction(void (*TSGen)(TransitionSystem& transitionSystem, Term& property), int bound = -1);
 
+        static bool runFBMCWithKInduction(void (*TSGen)(TransitionSystem& transitionSystem, Term& property), int bound = -1);
+
+
     private:
         static bool BMCWithKInductionBMCPart(const std::string &path, int bound, int &safe, std::mutex &mux,
                                              std::condition_variable &cv);

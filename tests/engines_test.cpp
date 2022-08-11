@@ -119,21 +119,43 @@ TEST(EasyPDRTests, EasyPDR) {
 
 TEST(FBMCTests, FBMC) {
     logger.set_verbosity(2);
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory2.btor2";
     auto s = BitwuzlaSolverFactory::create(false);
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
+
     auto preds = UnorderedTermSet();
+    auto pred_s = BitwuzlaSolverFactory::create(false);
+
     auto safeStep = int();
     auto mux = std::mutex();
     auto cv = std::condition_variable();
-    auto pred_s = BitwuzlaSolverFactory::create(false);
     auto to_pred = TermTranslator(pred_s);
     auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred);
-    fbmc.run(20);
+    fbmc.run(55);
+    logger.log(1, "has {} preds.", preds.size());
+    logger.log(1, "safe step is {}", safeStep);
+//    logger.log(1, "True preds in 33 steps: ");
 //    for (auto v : preds) {
 //        logger.log(1, "pred: {}", v);
 //    }
+
+    auto kind_slv = BitwuzlaSolverFactory::create(false);
+    auto kind_ts = TransitionSystem(kind_slv);
+    auto kind_prop = BTOR2Encoder(path, kind_ts).propvec().at(0);
+    auto to_kind_slv = TermTranslator(kind_slv);
+    logger.log(1, "old_prop = {}", kind_prop);
+    for (auto v : preds) {
+        kind_prop = kind_slv->make_term(And, kind_prop, to_kind_slv.transfer_term(v));
+    }
+    logger.log(1, "new_prop = {}", kind_prop);
+    auto kind = KInduction(kind_ts, kind_prop);
+    kind.run(55);
+}
+
+TEST(FBMCTests, FBMCWithKInd) {
+    logger.set_verbosity(2);
+
 }
 
 TEST(test, test) {
