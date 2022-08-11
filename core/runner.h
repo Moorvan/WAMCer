@@ -6,6 +6,7 @@
 #define WAMCER_RUNNER_H
 
 #include <thread>
+#include <atomic>
 #include "frontends/btor2_encoder.h"
 #include "engines/bmc.h"
 #include "engines/k_induction.h"

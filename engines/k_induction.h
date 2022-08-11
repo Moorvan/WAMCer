@@ -8,6 +8,9 @@
 #include "core/unroller.h"
 #include "utils/logger.h"
 #include "utils/defines.h"
+#include <mutex>
+#include <condition_variable>
+
 
 using namespace smt;
 
