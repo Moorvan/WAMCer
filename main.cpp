@@ -1,5 +1,3 @@
-#include <thread>
-#include <chrono>
 #include "core/runner.h"
 
 using namespace wamcer;

@@ -118,7 +118,7 @@ TEST(EasyPDRTests, EasyPDR) {
 }
 
 TEST(FBMCTests, FBMC) {
-    logger.set_verbosity(2);
+    logger.set_verbosity(3);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory2.btor2";
     auto s = BitwuzlaSolverFactory::create(false);
     auto ts = TransitionSystem(s);
@@ -132,7 +132,7 @@ TEST(FBMCTests, FBMC) {
     auto cv = std::condition_variable();
     auto to_pred = TermTranslator(pred_s);
     auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred);
-    fbmc.run(55);
+    fbmc.run(9);
     logger.log(1, "has {} preds.", preds.size());
     logger.log(1, "safe step is {}", safeStep);
 //    logger.log(1, "True preds in 33 steps: ");
@@ -144,13 +144,13 @@ TEST(FBMCTests, FBMC) {
     auto kind_ts = TransitionSystem(kind_slv);
     auto kind_prop = BTOR2Encoder(path, kind_ts).propvec().at(0);
     auto to_kind_slv = TermTranslator(kind_slv);
-    logger.log(1, "old_prop = {}", kind_prop);
+//    logger.log(1, "old_prop = {}", kind_prop);
     for (auto v : preds) {
         kind_prop = kind_slv->make_term(And, kind_prop, to_kind_slv.transfer_term(v));
     }
-    logger.log(1, "new_prop = {}", kind_prop);
+//    logger.log(1, "new_prop = {}", kind_prop);
     auto kind = KInduction(kind_ts, kind_prop);
-    kind.run(55);
+    kind.run(10);
 }
 
 TEST(FBMCTests, FBMCWithKInd) {

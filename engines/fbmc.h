@@ -15,6 +15,8 @@ using namespace smt;
 
 namespace wamcer {
 
+    using SortTermSetMap = std::unordered_map<Sort, UnorderedTermSet>;
+
     class FBMC {
     public:
         FBMC(TransitionSystem &ts, Term &property, UnorderedTermSet &predicates, int& safeStep, std::mutex& mux, std::condition_variable& cv, TermTranslator& to_preds);
@@ -32,9 +34,15 @@ namespace wamcer {
         int &safeStep;
         std::mutex& mux;
         std::condition_variable& cv;
+        UnorderedTermSet basePreds;
         UnorderedTermSet &preds;
 
-        void predicateCollect();
+        void collectStructuralPredicates();
+        void constructTermsRelation();
+        void constructComplexPreds();
+
+        SortTermSetMap collectTerms();
+        void addToBasePreds(TermVec terms);
 
         bool step0();
         bool stepN(int n);
