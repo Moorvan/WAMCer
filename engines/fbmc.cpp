@@ -152,9 +152,10 @@ namespace wamcer {
                 for (auto v2 : kvs.second) {
                     if (v1 != v2) {
                         auto v1EqV2 = solver->make_term(Equal, v1, v2);
-                        auto v1LeV2 = solver->make_term(BVUle, v1, v2);
-                        auto v1GeV2 = solver->make_term(BVUge, v1, v2);
-                        addToBasePreds({v1EqV2, v1LeV2, v1GeV2});
+//                        auto v1LeV2 = solver->make_term(BVUle, v1, v2);
+//                        auto v1GeV2 = solver->make_term(BVUge, v1, v2);
+                        addToBasePreds({v1EqV2});
+//                        addToBasePreds({v1EqV2, v1LeV2, v1GeV2});
 //                        logger.log(defines::logFBMC, 3, "new 3 preds: {}, {}, {}", v1EqV2, v1LeV2, v1GeV2);
                     }
                 }
@@ -166,6 +167,7 @@ namespace wamcer {
         logger.log(defines::logFBMC, 1, "collect terms...");
 
         auto sortTerms = SortTermSetMap();
+        auto arrs = UnorderedTermSet();
         auto bv1 = transitionSystem.make_sort(BV, 1);
 
         std::function<void(Term)> dfs = [&](Term t) {
@@ -173,6 +175,9 @@ namespace wamcer {
                 auto sort = t->get_sort();
                 if (sort != bv1 && sort->get_sort_kind() == BV && transitionSystem.only_curr(t) && !t->is_value()) {
                     sortTerms[sort].insert(t);
+                }
+                if (t->get_sort()->get_sort_kind() == ARRAY && transitionSystem.only_curr(t)) {
+                    arrs.insert(t);
                 }
             } else {
                 for (auto v: t) {
@@ -185,14 +190,33 @@ namespace wamcer {
         dfs(transitionSystem.init());
         dfs(property);
 
+        auto arrSortTerms = SortTermSetMap();
+        for (auto arr : arrs) {
+            auto idxSort = arr->get_sort()->get_indexsort();
+            auto elemSort = arr->get_sort()->get_elemsort();
+            for (auto idx : sortTerms[idxSort]) {
+                auto term = solver->make_term(Select, arr, idx);
+                arrSortTerms[elemSort].insert(term);
+            }
+        }
+
+        for (auto kvs : arrSortTerms) {
+            auto sort = kvs.first;
+            for (auto v : kvs.second) {
+                sortTerms[sort].insert(v);
+            }
+        }
+
         auto cnt = 0;
         logger.log(defines::logFBMC, 1, "collect terms: ");
         for (auto kvs : sortTerms) {
             logger.log(defines::logFBMC, 1, "   sort: {}", kvs.first);
             for (auto v : kvs.second) {
                 logger.log(defines::logFBMC, 1, "       term: {}", v);
+                cnt++;
             }
         }
+        logger.log(defines::logFBMC, 1, "collect {} terms.", cnt);
         return sortTerms;
     }
 
@@ -204,13 +228,20 @@ namespace wamcer {
 
         for (auto t1 : basePreds) {
             for (auto t2 : basePreds) {
-                for (auto r : basePreds) {
-                    auto t1AndT2 = solver->make_term(BVAnd, t1, t2);
-                    auto pred = solver->make_term(Implies, t1AndT2, r);
-                    preds.insert(to_preds.transfer_term(pred));
-                }
+                auto pred = solver->make_term(Implies, t1, t2);
+                preds.insert(to_preds.transfer_term(pred));
             }
         }
+//
+//        for (auto t1 : basePreds) {
+//            for (auto t2 : basePreds) {
+//                for (auto r : basePreds) {
+//                    auto t1AndT2 = solver->make_term(BVAnd, t1, t2);
+//                    auto pred = solver->make_term(Implies, t1AndT2, r);
+//                    preds.insert(to_preds.transfer_term(pred));
+//                }
+//            }
+//        }
     }
 
     void FBMC::addToBasePreds(TermVec terms) {
