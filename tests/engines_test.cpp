@@ -119,7 +119,7 @@ TEST(EasyPDRTests, EasyPDR) {
 
 TEST(FBMCTests, FBMC) {
     logger.set_verbosity(3);
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory2.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory3x2.btor2";
     auto s = BitwuzlaSolverFactory::create(false);
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
@@ -150,7 +150,7 @@ TEST(FBMCTests, FBMC) {
     }
 //    logger.log(1, "new_prop = {}", kind_prop);
     auto kind = KInduction(kind_ts, kind_prop);
-    kind.run(10);
+    kind.run(9);
 }
 
 TEST(FBMCTests, FBMCWithKInd) {

@@ -155,6 +155,7 @@ namespace wamcer {
 //                        auto v1LeV2 = solver->make_term(BVUle, v1, v2);
 //                        auto v1GeV2 = solver->make_term(BVUge, v1, v2);
                         addToBasePreds({v1EqV2});
+                        logger.log(defines::logFBMC, 3, "{}", v1EqV2);
 //                        addToBasePreds({v1EqV2, v1LeV2, v1GeV2});
 //                        logger.log(defines::logFBMC, 3, "new 3 preds: {}, {}, {}", v1EqV2, v1LeV2, v1GeV2);
                     }
@@ -171,7 +172,8 @@ namespace wamcer {
         auto bv1 = transitionSystem.make_sort(BV, 1);
 
         std::function<void(Term)> dfs = [&](Term t) {
-            if (t->get_op() == Op() || t->get_op() == Select) {
+//            if (t->get_op() == Op() || t->get_op() == Select) {
+            if (t->get_op() == Op()) {
                 auto sort = t->get_sort();
                 if (sort != bv1 && sort->get_sort_kind() == BV && transitionSystem.only_curr(t) && !t->is_value()) {
                     sortTerms[sort].insert(t);
