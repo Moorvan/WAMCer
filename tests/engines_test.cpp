@@ -119,7 +119,8 @@ TEST(EasyPDRTests, EasyPDR) {
 
 TEST(FBMCTests, FBMC) {
     logger.set_verbosity(3);
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory3x2.btor2";
+//    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btor2_BM/ret0024_dir.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/cal2.btor2";
     auto s = BitwuzlaSolverFactory::create(false);
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);

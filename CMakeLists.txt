@@ -26,10 +26,12 @@ set(CMAKE_MODULE_PATH ${SMT_SWITCH_DIR}/cmake)
 find_package(GMP REQUIRED)
 
 target_link_libraries(WAMCer-lib PUBLIC
-        ${SMT_SWITCH_DIR}/local/lib/libsmt-switch.a
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-btor.a
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-bitwuzla.a
-#        ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-z3.a
+        ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-cvc5.a
+        ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-z3.a
+        ${SMT_SWITCH_DIR}/local/lib/libsmt-switch.a
+        pthread
         ${GMPXX_LIBRARIES}
         ${GMP_LIBRARIES})
 

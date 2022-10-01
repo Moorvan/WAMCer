@@ -2,3 +2,5 @@
 /.idea
 /btors/hwmcc/
 /btor2_BM/
+/btors/timeout/
+.vscode/*

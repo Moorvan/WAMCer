@@ -96,7 +96,6 @@ namespace wamcer {
 
     bool FBMC::step0() {
         auto init0 = unroller.at_time(transitionSystem.init(), 0);
-        logger.log(defines::logFBMC, 1, "init0: {}", init0);
         solver->assert_formula(init0);
         auto prop0 = unroller.at_time(property, 0);
         auto bad0 = solver->make_term(Not, prop0);
@@ -146,7 +145,7 @@ namespace wamcer {
     void FBMC::constructTermsRelation() {
         auto sortTerms = collectTerms();
 
-        logger.log(defines::logFBMC, 3, "add new term relations:");
+        logger.log(defines::logFBMC, 3, "add new term relations...");
         for (auto kvs : sortTerms) {
             for (auto v1 : kvs.second) {
                 for (auto v2 : kvs.second) {
@@ -155,7 +154,7 @@ namespace wamcer {
 //                        auto v1LeV2 = solver->make_term(BVUle, v1, v2);
 //                        auto v1GeV2 = solver->make_term(BVUge, v1, v2);
                         addToBasePreds({v1EqV2});
-                        logger.log(defines::logFBMC, 3, "{}", v1EqV2);
+//                        logger.log(defines::logFBMC, 3, "{}", v1EqV2);
 //                        addToBasePreds({v1EqV2, v1LeV2, v1GeV2});
 //                        logger.log(defines::logFBMC, 3, "new 3 preds: {}, {}, {}", v1EqV2, v1LeV2, v1GeV2);
                     }
@@ -234,7 +233,7 @@ namespace wamcer {
                 preds.insert(to_preds.transfer_term(pred));
             }
         }
-//
+
 //        for (auto t1 : basePreds) {
 //            for (auto t2 : basePreds) {
 //                for (auto r : basePreds) {
