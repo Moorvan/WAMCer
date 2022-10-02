@@ -10,6 +10,7 @@
 #include "smt-switch/bitwuzla_factory.h"
 #include "smt-switch/boolector_factory.h"
 #include "smt-switch/z3_factory.h"
+#include "smt-switch/cvc5_factory.h"
 #include "smt-switch/smt.h"
 #include "utils/logger.h"
 #include "core/ts.h"
@@ -20,6 +21,45 @@
 using namespace smt;
 using namespace std;
 using namespace wamcer;
+
+TEST(Solvers, smts) {
+    auto bitwuzla = BitwuzlaSolverFactory::create(true);
+    auto sort0 = bitwuzla->make_sort(BV, 8);
+    auto x0 = bitwuzla->make_symbol("x", sort0);
+    auto y0 = bitwuzla->make_symbol("y", sort0);
+    auto t0 = bitwuzla->make_term(Equal, x0, y0);
+    bitwuzla->assert_formula(t0);
+    if (bitwuzla->check_sat().is_sat()) {
+        logger.log(defines::logTest, 0, "sat");
+    }
+    auto btor = BoolectorSolverFactory::create(true);
+    auto sort1 = btor->make_sort(BV, 8);
+    auto x1 = btor->make_symbol("x", sort1);
+    auto y1 = btor->make_symbol("y", sort1);
+    auto t1 = btor->make_term(Equal, x1, y1);
+    btor->assert_formula(t1);
+    if (btor->check_sat().is_sat()) {
+        logger.log(defines::logTest, 0, "sat");
+    }
+    auto z3 = Z3SolverFactory::create(true);
+    auto sort2 = z3->make_sort(BV, 8);
+    auto x2 = z3->make_symbol("x", sort2);
+    auto y2 = z3->make_symbol("y", sort2);
+    auto t2 = z3->make_term(Equal, x2, y2);
+    z3->assert_formula(t2);
+    if (z3->check_sat().is_sat()) {
+        logger.log(defines::logTest, 0, "sat");
+    }
+    auto cvc5 = Cvc5SolverFactory::create(true);
+    auto sort3 = cvc5->make_sort(BV, 8);
+    auto x3 = cvc5->make_symbol("x", sort3);
+    auto y3 = cvc5->make_symbol("y", sort3);
+    auto t3 = cvc5->make_term(Equal, x3, y3);
+    cvc5->assert_formula(t3);
+    if (cvc5->check_sat().is_sat()) {
+        logger.log(defines::logTest, 0, "sat");
+    }
+}
 
 TEST(SolverLearningTests, Syntax) {
     auto s = BitwuzlaSolverFactory::create(false);
