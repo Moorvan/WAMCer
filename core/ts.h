@@ -18,11 +18,8 @@
 
 #include <string>
 #include <unordered_map>
-
-//#include "smt-switch/cvc4_factory.h"
-#include "smt-switch/bitwuzla_factory.h"
+#include "smt-switch/boolector_factory.h"
 #include "smt-switch/smt.h"
-
 #include "utils/exceptions.h"
 
 namespace wamcer {
@@ -34,13 +31,11 @@ namespace wamcer {
          * sorts
          *  this makes it a great candidate for representing the TransitionSystem */
         TransitionSystem()
-                : solver_(smt::BitwuzlaSolverFactory::create(false)),
+                : solver_(smt::BoolectorSolverFactory::create(true)),
                   init_(solver_->make_term(true)),
                   trans_(solver_->make_term(true)),
                   functional_(false),
                   deterministic_(false) {
-            solver_->set_opt("incremental", "true");
-            solver_->set_opt("produce-models", "true");
         }
 
         TransitionSystem(const smt::SmtSolver &s)
@@ -49,8 +44,6 @@ namespace wamcer {
                   trans_(s->make_term(true)),
                   functional_(false),
                   deterministic_(false) {
-            solver_->set_opt("incremental", "true");
-            solver_->set_opt("produce-models", "true");
         }
 
         friend void swap(TransitionSystem &ts1, TransitionSystem &ts2);

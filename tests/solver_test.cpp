@@ -61,6 +61,19 @@ TEST(Solvers, smts) {
     }
 }
 
+TEST(Solvers, rewrite) {
+    auto btor = BoolectorSolverFactory::create(true);
+    auto sort1 = btor->make_sort(BV, 8);
+    auto x1 = btor->make_symbol("x", sort1);
+    auto y1 = btor->make_symbol("y", sort1);
+    auto t1 = btor->make_term(Equal, x1, y1);
+    btor->assert_formula(t1);
+    if (btor->check_sat().is_sat()) {
+        logger.log(defines::logTest, 0, "sat");
+    }
+    logger.log(defines::logTest, 0, "{}", t1);
+}
+
 TEST(SolverLearningTests, Syntax) {
     auto s = BitwuzlaSolverFactory::create(false);
     s->set_opt("incremental", "true");
@@ -105,9 +118,6 @@ TEST(SolverLearningTests, Syntax) {
 //    }
 }
 
-TEST(SolverLearningTests, Rewrite) {
-    logger.log(0, "log testing..");
-}
 
 TEST(Btor2Tests, Btor2Parser) {
     auto ts = TransitionSystem();
@@ -223,10 +233,6 @@ TEST(SolverLearningTests, Simplify) {
     for (const auto& t: usc) {
         logger.log(0, "t: {}", t);
     }
-}
-
-TEST(Z3Testers, Z3) {
-    auto s = BitwuzlaSolverFactory::create(false);
 }
 
 TEST(SolverTests, UnsatCore) {

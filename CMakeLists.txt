@@ -10,6 +10,7 @@ add_library(WAMCer-lib
         core/ts.cpp
         core/unroller.cpp
         core/runner.cpp
+        core/solverFactory.cpp
         utils/logger.cpp
         utils/timer.cpp
         engines/bmc.cpp

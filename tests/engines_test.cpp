@@ -8,6 +8,7 @@
 #include "engines/pdr.h"
 #include "engines/fbmc.h"
 #include "smt-switch/boolector_factory.h"
+#include "smt-switch/bitwuzla_factory.h"
 #include <thread>
 #include <chrono>
 #include "utils/timer.h"
@@ -154,44 +155,3 @@ TEST(FBMCTests, FBMC) {
     kind.run(9);
 }
 
-TEST(FBMCTests, FBMCWithKInd) {
-    logger.set_verbosity(2);
-
-}
-
-TEST(test, test) {
-    auto s1 = BitwuzlaSolverFactory::create(false);
-//    auto s2 = BitwuzlaSolverFactory::create(false);
-//    auto to_s1 = TermTranslator(s1);
-//    auto x = s2->make_symbol("x", s2->make_sort(BOOL));
-//    auto x_s1 = to_s1.transfer_term(x);
-
-//    auto s = std::vector<int>();
-//    s.push_back(1);
-//    s.push_back(2);
-//    logger.log(0, "{}", s.size());
-
-//    auto bv8 = s1->make_sort(BV, 8);
-//    auto a = s1->make_symbol("a", bv8);
-//    auto b = s1->make_symbol("b", bv8);
-//    auto t = s1->make_term(BVUge, a, b);
-//    logger.log(0, "{}", t);
-//    logger.log(0, "{}", t->get_sort());
-//    logger.log(0, "{}", t->get_op());
-    auto bv1 = s1->make_sort(BV, 1);
-    auto bool_ = s1->make_sort(BOOL);
-//    if (t->get_sort() == bv1) {
-//        logger.log(0, "t.sort() is bv1");
-//    }
-//    if (t->get_sort() == bool_) {
-//        logger.log(0, "t.sort() is bool");
-//    }
-//    if (a->get_sort() == bool_) {
-//        logger.log(0, "dsfaError");
-//    }
-
-    auto a = s1->make_symbol("a", bool_);
-    auto b = s1->make_symbol("b", bool_);
-    auto t0 = s1->make_term(And, a, b);
-    logger.log(0, "t0 = {}", t0);
-}

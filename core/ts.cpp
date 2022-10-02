@@ -710,7 +710,7 @@ namespace wamcer {
     }
 
     TransitionSystem TransitionSystem::copy(const TransitionSystem &other_ts) {
-        auto solver = BitwuzlaSolverFactory::create(false);
+        auto solver = BoolectorSolverFactory::create(false);
         solver->set_opt("incremental", "true");
         solver->set_opt("produce-models", "true");
         auto tt = TermTranslator(solver);
