@@ -13,29 +13,31 @@ namespace wamcer {
         solver->set_opt("produce-models", "true");
     }
 
-    SmtSolver SolverFactory::boolectorSolver() {
-        auto s = BoolectorSolverFactory::create(true);
+    SmtSolver SolverFactory::boolectorSolver(bool logging) {
+        auto s = BoolectorSolverFactory::create(logging);
         setIncremental(s);
         setModelProduce(s);
         return s;
     }
 
-    SmtSolver SolverFactory::bitwuzlaSolver() {
-        auto s = BitwuzlaSolverFactory::create(true);
+    SmtSolver SolverFactory::bitwuzlaSolver(bool logging) {
+        auto s = BitwuzlaSolverFactory::create(logging);
         setIncremental(s);
         setModelProduce(s);
         return s;
     }
 
-    SmtSolver SolverFactory::z3Solver() {
-        auto s = Z3SolverFactory::create(true);
+    SmtSolver SolverFactory::z3Solver(bool logging) {
+        auto s = Z3SolverFactory::create(logging);
         setIncremental(s);
         setModelProduce(s);
         return s;
     }
 
-    SmtSolver SolverFactory::cvc5Solver() {
-        auto s = Cvc5SolverFactory::create(true);
+    SmtSolver SolverFactory::cvc5Solver(bool logging) {
+        auto s = Cvc5SolverFactory::create(logging);
+        setIncremental(s);
+        setModelProduce(s);
         return s;
     }
 

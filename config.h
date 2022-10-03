@@ -7,7 +7,7 @@
 
 namespace config {
     // bmc || k-induction
-    const auto wakeKindCycle = 200; // milliseconds
+    const auto wakeKindCycle = 2; // seconds
 }
 
 #endif //WAMCER_CONFIG_H

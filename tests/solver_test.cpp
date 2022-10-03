@@ -14,6 +14,7 @@
 #include "smt-switch/smt.h"
 #include "utils/logger.h"
 #include "core/ts.h"
+#include "core/solverFactory.h"
 #include "frontends/btor2_encoder.h"
 #include "core/unroller.h"
 #include "core/runner.h"
@@ -120,7 +121,8 @@ TEST(SolverLearningTests, Syntax) {
 
 
 TEST(Btor2Tests, Btor2Parser) {
-    auto ts = TransitionSystem();
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-false.btor";
     BTOR2Encoder be(path, ts);
     logger.log(0, ts.trans()->to_string());
@@ -135,7 +137,8 @@ TEST(MultiThreadTests, KInduction) {
     logger.set_verbosity(1);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
 //    Runner::runBMC(path);
-    auto ts = TransitionSystem();
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
     int safe = 10;
     auto mux = std::mutex();
@@ -211,7 +214,8 @@ TEST(MultiThreadTests, WaitAndJoin) {
 
 TEST(SolverLearningTests, Simplify) {
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
-    auto ts = TransitionSystem();
+    auto s0 = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s0);
     auto s = ts.solver();
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
     auto unroller = Unroller(ts);
@@ -230,7 +234,7 @@ TEST(SolverLearningTests, Simplify) {
     auto usc = UnorderedTermSet();
     s->get_unsat_assumptions(usc);
     logger.log(defines::logTest, 0, "usc: ");
-    for (const auto& t: usc) {
+    for (const auto &t: usc) {
         logger.log(0, "t: {}", t);
     }
 }
@@ -247,7 +251,7 @@ TEST(SolverTests, UnsatCore) {
     auto out = UnorderedTermSet();
     if (res.is_unsat()) {
         s->get_unsat_assumptions(out);
-        for (auto t : out) {
+        for (auto t: out) {
             logger.log(0, "{}", t);
         }
     }

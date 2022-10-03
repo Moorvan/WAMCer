@@ -26,18 +26,6 @@ namespace wamcer {
 
     class TransitionSystem {
     public:
-        /** use CVC4 by default (doesn't require logging so pass false)
-         *  it supports the most theories and doesn't rewrite-on-the-fly or alias
-         * sorts
-         *  this makes it a great candidate for representing the TransitionSystem */
-        TransitionSystem()
-                : solver_(smt::BoolectorSolverFactory::create(true)),
-                  init_(solver_->make_term(true)),
-                  trans_(solver_->make_term(true)),
-                  functional_(false),
-                  deterministic_(false) {
-        }
-
         TransitionSystem(const smt::SmtSolver &s)
                 : solver_(s),
                   init_(s->make_term(true)),

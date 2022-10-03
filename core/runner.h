@@ -27,21 +27,21 @@ namespace wamcer {
         runBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
                              smt::SmtSolver(solverFactory)(), int bound = -1);
 
-        static bool runBMCWithKInduction(std::string path, int bound = -1);
+//        static bool runBMCWithKInduction(std::string path, int bound = -1);
+//
+//        static bool
+//        runBMCWithKInduction(void (*TSGen)(TransitionSystem &transitionSystem, Term &property), int bound = -1);
+//
+//        static bool
+//        runFBMCWithKInduction(void (*TSGen)(TransitionSystem &transitionSystem, Term &property), int bound = -1);
 
-        static bool
-        runBMCWithKInduction(void (*TSGen)(TransitionSystem &transitionSystem, Term &property), int bound = -1);
 
-        static bool
-        runFBMCWithKInduction(void (*TSGen)(TransitionSystem &transitionSystem, Term &property), int bound = -1);
-
-
-    private:
-        static bool BMCWithKInductionBMCPart(std::string path, int bound, int &safe, std::mutex &mux,
-                                             std::condition_variable &cv);
-
-        static bool BMCWithKInductionKindPart(std::string path, int bound, int &safe, std::mutex &mux,
-                                              std::condition_variable &cv);
+//    private:
+//        static bool BMCWithKInductionBMCPart(std::string path, int bound, int &safe, std::mutex &mux,
+//                                             std::condition_variable &cv);
+//
+//        static bool BMCWithKInductionKindPart(std::string path, int bound, int &safe, std::mutex &mux,
+//                                              std::condition_variable &cv);
     };
 }
 

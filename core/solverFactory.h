@@ -16,10 +16,10 @@ using namespace smt;
 namespace wamcer {
     class SolverFactory {
     public:
-        static SmtSolver boolectorSolver();
-        static SmtSolver bitwuzlaSolver();
-        static SmtSolver z3Solver();
-        static SmtSolver cvc5Solver();
+        static SmtSolver boolectorSolver(bool logging = false);
+        static SmtSolver bitwuzlaSolver(bool logging = false);
+        static SmtSolver z3Solver(bool logging = false);
+        static SmtSolver cvc5Solver(bool logging = false);
 
     private:
         static void setIncremental(smt::SmtSolver &solver);

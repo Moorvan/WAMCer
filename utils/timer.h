@@ -12,7 +12,7 @@
 #include "utils/logger.h"
 
 namespace timer {
-    [[noreturn]] void wakeEvery(long long seconds, std::condition_variable& cv);
+    void wakeEvery(long long seconds, std::condition_variable& cv, bool& isFinished);
 }
 
 
