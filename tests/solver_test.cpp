@@ -133,6 +133,28 @@ TEST(Btor2Tests, Btor2Parser) {
     solver->assert_formula(init0);
 }
 
+TEST(SolverTests, Ints) {
+    auto slv = SolverFactory::boolectorSolver();
+    auto x = slv->make_symbol("x", slv->make_sort(INT));
+    // x > 5
+    auto t1 = slv->make_term(Gt, x, slv->make_term(5, slv->make_sort(INT)));
+    // x < 10
+    auto t2 = slv->make_term(Lt, x, slv->make_term(10, slv->make_sort(INT)));
+    auto res = slv->check_sat_assuming({t1, t2});
+    if (res.is_sat()) {
+        logger.log(0, "sat");
+        logger.log(0, "x = {}", slv->get_value(x));
+
+    } else {
+        logger.log(0, "unsat");
+        auto unsatCore = UnorderedTermSet();
+        slv->get_unsat_assumptions(unsatCore);
+        for (auto &t: unsatCore) {
+            logger.log(0, "unsat core: {}", t);
+        }
+    }
+}
+
 TEST(MultiThreadTests, KInduction) {
     logger.set_verbosity(1);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/memory.btor2";
@@ -255,5 +277,4 @@ TEST(SolverTests, UnsatCore) {
             logger.log(0, "{}", t);
         }
     }
-
 }

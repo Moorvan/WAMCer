@@ -8,7 +8,7 @@
 namespace wamcer {
 
     FBMC::FBMC(TransitionSystem &ts, Term &property, UnorderedTermSet &predicates, int &safeStep, std::mutex &mux,
-               std::condition_variable &cv, TermTranslator &to_preds) :
+               std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel, int complexPredsLevel) :
             preds(predicates),
             mux(mux),
             cv(cv),
@@ -18,7 +18,9 @@ namespace wamcer {
             solver(ts.solver()),
             unroller(ts),
             to_preds(to_preds),
-            to_solver(solver) {}
+            to_solver(solver),
+            termRelationLevel(termRelationLevel),
+            complexPredsLevel(complexPredsLevel) {}
 
     bool FBMC::run(int bound) {
         logger.log(defines::logFBMC, 1, "init: {}", transitionSystem.init());
@@ -156,12 +158,13 @@ namespace wamcer {
                 for (auto v2: kvs.second) {
                     if (v1 != v2) {
                         auto v1EqV2 = solver->make_term(Equal, v1, v2);
-//                        auto v1LeV2 = solver->make_term(BVUle, v1, v2);
-//                        auto v1GeV2 = solver->make_term(BVUge, v1, v2);
-                        addToBasePreds({v1EqV2});
-//                        logger.log(defines::logFBMC, 3, "{}", v1EqV2);
-//                        addToBasePreds({v1EqV2, v1LeV2, v1GeV2});
-//                        logger.log(defines::logFBMC, 3, "new 3 preds: {}, {}, {}", v1EqV2, v1LeV2, v1GeV2);
+                        if (termRelationLevel == 1) {
+                            auto v1UltV2 = solver->make_term(BVUlt, v1, v2);
+                            auto v1SltV2 = solver->make_term(BVSlt, v1, v2);
+                            addToBasePreds({v1EqV2, v1UltV2, v1SltV2});
+                        } else {
+                            addToBasePreds({v1EqV2});
+                        }
                     }
                 }
             }
@@ -227,27 +230,30 @@ namespace wamcer {
     }
 
     void FBMC::constructComplexPreds() {
-
         for (auto t: basePreds) {
             preds.insert(to_preds.transfer_term(t));
         }
 
-        for (auto t1: basePreds) {
-            for (auto t2: basePreds) {
-                auto pred = solver->make_term(Implies, t1, t2);
-                preds.insert(to_preds.transfer_term(pred));
+        if (complexPredsLevel >= 1) {
+            for (auto t1: basePreds) {
+                for (auto t2: basePreds) {
+                    auto pred = solver->make_term(Implies, t1, t2);
+                    preds.insert(to_preds.transfer_term(pred));
+                }
             }
         }
 
-//        for (auto t1 : basePreds) {
-//            for (auto t2 : basePreds) {
-//                for (auto r : basePreds) {
-//                    auto t1AndT2 = solver->make_term(BVAnd, t1, t2);
-//                    auto pred = solver->make_term(Implies, t1AndT2, r);
-//                    preds.insert(to_preds.transfer_term(pred));
-//                }
-//            }
-//        }
+        if (complexPredsLevel >= 2) {
+            for (auto t1: basePreds) {
+                for (auto t2: basePreds) {
+                    for (auto r: basePreds) {
+                        auto t1AndT2 = solver->make_term(BVAnd, t1, t2);
+                        auto pred = solver->make_term(Implies, t1AndT2, r);
+                        preds.insert(to_preds.transfer_term(pred));
+                    }
+                }
+            }
+        }
     }
 
     void FBMC::addToBasePreds(TermVec terms) {

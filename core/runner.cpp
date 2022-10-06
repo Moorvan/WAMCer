@@ -100,7 +100,7 @@ namespace wamcer {
     }
 
     bool Runner::runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
-                                       smt::SmtSolver (*solverFactory)(), int bound) {
+                                       smt::SmtSolver (*solverFactory)(), int bound, int termRelationLevel, int complexPredsLevel) {
         logger.log(defines::logFBMCKindRunner, 0, "file: {}", path);
         logger.log(defines::logFBMCKindRunner, 0, "FBMC + K-Induction running...");
         auto safe = int();
@@ -119,7 +119,7 @@ namespace wamcer {
             auto bmcTs = TransitionSystem(bmcSlv);
             auto bmcP = Term();
             decoder(path, bmcTs, bmcP);
-            auto fbmc = FBMC(bmcTs, bmcP, preds, safe, mux, cv, toPred);
+            auto fbmc = FBMC(bmcTs, bmcP, preds, safe, mux, cv, toPred, termRelationLevel, complexPredsLevel);
             auto fbmcRes = fbmc.run(bound);
             finish.notify_all();
             if (fbmcRes) {
@@ -188,7 +188,6 @@ namespace wamcer {
             logger.log(defines::logFBMCKindRunner, 0, "Result: unsafe.");
             return false;
         }
-        return res;
     }
 
 }
