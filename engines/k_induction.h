@@ -10,6 +10,7 @@
 #include "utils/defines.h"
 #include <mutex>
 #include <condition_variable>
+#include <future>
 
 
 using namespace smt;
@@ -17,7 +18,7 @@ using namespace smt;
 namespace wamcer {
     class KInduction {
     public:
-        KInduction(TransitionSystem &transitionSystem, Term &property, int &safeBound, std::mutex &mux, std::condition_variable& cv);
+        KInduction(TransitionSystem &transitionSystem, Term &property, int &safeBound, std::mutex &mux, std::condition_variable& cv, std::future<void> exit_signal = std::future<void>());
         KInduction(TransitionSystem &transitionSystem, Term &property);
         bool run(int bound = -1);
 
@@ -33,6 +34,7 @@ namespace wamcer {
         std::mutex& muxRef;
         std::condition_variable cv;
         std::condition_variable& cvRef;
+        std::future<void> exit_signal;
 
         // prove if property is n-inductive invariant
         bool stepN(int n);

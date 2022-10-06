@@ -3,9 +3,11 @@
 //
 
 #include <gtest/gtest.h>
+#include <future>
 #include "utils/timer.h"
 #include "utils/logger.h"
 #include "config.h"
+
 using namespace wamcer;
 
 TEST(TimerTest, WakeEvery) {
@@ -41,9 +43,30 @@ TEST(TimerTest, WakeEvery) {
     t1.join();
 }
 
+TEST(DetachTester, Detach) {
+    auto i = 1;
+    auto signal_exit = std::promise<void>();
+    auto exit_future = signal_exit.get_future();
+    auto t = std::thread([&] {
+        logger.log(0, "This is in t");
+        while (exit_future.wait_for(std::chrono::microseconds(1)) == std::future_status::timeout) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            logger.log(0, "t: i = {}", i);
+            i++;
+        }
+        logger.log(0, "t: exit");
+    });
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    signal_exit.set_value();
+    t.detach();
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        logger.log(0, "main: i = {}", i);
+    }
+}
+
 TEST(ConfigTest, GetValue) {
     logger.log(0, "wakeKindCycle: {}", config::wakeKindCycle);
-
 }
 
 TEST(LoggerTest, Verbose) {

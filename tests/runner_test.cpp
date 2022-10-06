@@ -28,13 +28,16 @@ TEST(RunnerTests, runBMC0) {
 
 TEST(RunnerTests, runBMCWithKInduction) {
     logger.set_verbosity(1);
-    auto path = "../../btors/counter-101.btor2";
+    auto path = "../../btors/memory.btor2";
     Runner::runBMCWithKInduction(path, BTOR2Encoder::decoder, []() {
         return SolverFactory::boolectorSolver();
-    }, 1000000);
-//    Runner::runBMCWithKInduction(path, 101);
+    }, 102);
 }
 
-TEST(RunnerTests, RunFBMCWithKind) {
-    logger.set_verbosity(2);
+TEST(RunnerTests, runFBMCWithKInduction) {
+    logger.set_verbosity(1);
+    auto path = "../../btors/memory.btor2";
+    Runner::runFBMCWithKInduction(path, BTOR2Encoder::decoder, []() {
+        return SolverFactory::boolectorSolver();
+    });
 }

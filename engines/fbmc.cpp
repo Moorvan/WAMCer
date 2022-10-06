@@ -29,7 +29,8 @@ namespace wamcer {
         constructTermsRelation();
         constructComplexPreds();
 
-        logger.log(defines::logFBMC, 1, "The initialization has {} preds.", preds.size());
+        cv.notify_all();
+        logger.log(defines::logFBMC, 2, "The initialization has {} preds.", preds.size());
         if (!step0()) {
             logger.log(defines::logFBMC, 0, "Check failed at init step.");
             return false;
@@ -101,10 +102,10 @@ namespace wamcer {
         auto bad0 = solver->make_term(Not, prop0);
         auto res = solver->check_sat_assuming({bad0});
         if (res.is_sat()) {
-            logger.log(defines::logFBMC, 1, "init0 /\\ bad0 is sat.");
+            logger.log(defines::logFBMC, 2, "init0 /\\ bad0 is sat.");
             return false;
         } else {
-            logger.log(defines::logFBMC, 1, "init0 /\\ bad0 is unsat.");
+            logger.log(defines::logFBMC, 2, "init0 /\\ bad0 is unsat.");
             filterPredsAt(0);
             return true;
         }
@@ -117,10 +118,10 @@ namespace wamcer {
         auto badN = solver->make_term(Not, propN);
         auto res = solver->check_sat_assuming({badN});
         if (res.is_sat()) {
-            logger.log(defines::logFBMC, 1, "init0 /\\ trans...{} /\\ bad{} is sat.", n, n);
+            logger.log(defines::logFBMC, 2, "init0 /\\ trans...{} /\\ bad{} is sat.", n, n);
             return false;
         } else {
-            logger.log(defines::logFBMC, 1, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
+            logger.log(defines::logFBMC, 2, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
             filterPredsAt(n);
             return true;
         }
@@ -128,17 +129,21 @@ namespace wamcer {
 
     void FBMC::filterPredsAt(int step) {
         auto notPass = TermVec();
-        for (auto v: preds) {
-            auto slv_v = to_solver.transfer_term(v);
-            auto v_at_step = unroller.at_time(slv_v, step);
-            auto not_v = solver->make_term(Not, v_at_step);
-            auto res = solver->check_sat_assuming({not_v});
-            if (res.is_sat()) {
-                notPass.push_back(v);
+        {
+            auto lck = std::unique_lock(mux);
+            for (auto v: preds) {
+                auto slv_v = to_solver.transfer_term(v);
+                auto v_at_step = unroller.at_time(slv_v, step);
+                auto not_v = solver->make_term(Not, v_at_step);
+                auto res = solver->check_sat_assuming({not_v});
+                if (res.is_sat()) {
+                    notPass.push_back(v);
+                }
             }
-        }
-        for (auto v: notPass) {
-            preds.erase(v);
+
+            for (auto v: notPass) {
+                preds.erase(v);
+            }
         }
     }
 
@@ -146,9 +151,9 @@ namespace wamcer {
         auto sortTerms = collectTerms();
 
         logger.log(defines::logFBMC, 3, "add new term relations...");
-        for (auto kvs : sortTerms) {
-            for (auto v1 : kvs.second) {
-                for (auto v2 : kvs.second) {
+        for (auto kvs: sortTerms) {
+            for (auto v1: kvs.second) {
+                for (auto v2: kvs.second) {
                     if (v1 != v2) {
                         auto v1EqV2 = solver->make_term(Equal, v1, v2);
 //                        auto v1LeV2 = solver->make_term(BVUle, v1, v2);
@@ -164,7 +169,7 @@ namespace wamcer {
     }
 
     SortTermSetMap FBMC::collectTerms() {
-        logger.log(defines::logFBMC, 1, "collect terms...");
+        logger.log(defines::logFBMC, 2, "collect terms...");
 
         auto sortTerms = SortTermSetMap();
         auto arrs = UnorderedTermSet();
@@ -192,43 +197,43 @@ namespace wamcer {
         dfs(property);
 
         auto arrSortTerms = SortTermSetMap();
-        for (auto arr : arrs) {
+        for (auto arr: arrs) {
             auto idxSort = arr->get_sort()->get_indexsort();
             auto elemSort = arr->get_sort()->get_elemsort();
-            for (auto idx : sortTerms[idxSort]) {
+            for (auto idx: sortTerms[idxSort]) {
                 auto term = solver->make_term(Select, arr, idx);
                 arrSortTerms[elemSort].insert(term);
             }
         }
 
-        for (auto kvs : arrSortTerms) {
+        for (auto kvs: arrSortTerms) {
             auto sort = kvs.first;
-            for (auto v : kvs.second) {
+            for (auto v: kvs.second) {
                 sortTerms[sort].insert(v);
             }
         }
 
         auto cnt = 0;
-        logger.log(defines::logFBMC, 1, "collect terms: ");
-        for (auto kvs : sortTerms) {
-            logger.log(defines::logFBMC, 1, "   sort: {}", kvs.first);
-            for (auto v : kvs.second) {
-                logger.log(defines::logFBMC, 1, "       term: {}", v);
+        logger.log(defines::logFBMC, 2, "collect terms: ");
+        for (auto kvs: sortTerms) {
+            logger.log(defines::logFBMC, 2, "   sort: {}", kvs.first);
+            for (auto v: kvs.second) {
+                logger.log(defines::logFBMC, 2, "       term: {}", v);
                 cnt++;
             }
         }
-        logger.log(defines::logFBMC, 1, "collect {} terms.", cnt);
+        logger.log(defines::logFBMC, 2, "collect {} terms.", cnt);
         return sortTerms;
     }
 
     void FBMC::constructComplexPreds() {
 
-        for (auto t : basePreds) {
+        for (auto t: basePreds) {
             preds.insert(to_preds.transfer_term(t));
         }
 
-        for (auto t1 : basePreds) {
-            for (auto t2 : basePreds) {
+        for (auto t1: basePreds) {
+            for (auto t2: basePreds) {
                 auto pred = solver->make_term(Implies, t1, t2);
                 preds.insert(to_preds.transfer_term(pred));
             }
@@ -246,7 +251,7 @@ namespace wamcer {
     }
 
     void FBMC::addToBasePreds(TermVec terms) {
-        for (auto t : terms) {
+        for (auto t: terms) {
             basePreds.insert(t);
             basePreds.insert(solver->make_term(Not, t));
         }

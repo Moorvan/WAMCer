@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(WAMCer)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 add_executable(WAMCer
         main.cpp)
 add_library(WAMCer-lib
@@ -20,11 +20,12 @@ add_library(WAMCer-lib
         )
 
 
-# link smt-switch and gmp
+# link smt-switch and gmp, or boost
 set(SMT_SWITCH_DIR ${PROJECT_SOURCE_DIR}/smt-switch)
 
 set(CMAKE_MODULE_PATH ${SMT_SWITCH_DIR}/cmake)
 find_package(GMP REQUIRED)
+#find_package(Boost COMPONENTS thread chrono REQUIRED)
 
 target_link_libraries(WAMCer-lib PUBLIC
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-btor.a
@@ -33,8 +34,12 @@ target_link_libraries(WAMCer-lib PUBLIC
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch-z3.a
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch.a
         pthread
+#        ${Boost_LIBRARIES}
         ${GMPXX_LIBRARIES}
         ${GMP_LIBRARIES})
+
+#include_directories(${Boost_INCLUDE_DIRS})
+ADD_DEFINITIONS("-DHAS_BOOST")
 
 target_include_directories(WAMCer-lib PUBLIC
         smt-switch/local/include

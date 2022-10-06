@@ -56,19 +56,30 @@ TEST(BMCTests, Sync) {
 }
 
 TEST(KInductionTests, SingleKInd) {
-    logger.set_verbosity(2);
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
+    logger.set_verbosity(1);
+    auto path = "../../btors/counter-101.btor2";
     auto s = SolverFactory::boolectorSolver();
+    auto safeBound = defines::allStepSafe;
+    auto mux = std::mutex();
+    auto cv = std::condition_variable();
     auto ts = TransitionSystem(s);
-    auto p = BTOR2Encoder(path, ts).propvec().at(0);
-    auto tsCopy = TransitionSystem::copy(ts);
-    auto pCopy = tsCopy.add_term(p);
-    auto kind = KInduction(tsCopy, pCopy);
-    if (kind.run()) {
-        logger.log(0, "Proved: IS INVARIANT.");
-    } else {
-        logger.log(0, "Unknown.");
-    }
+    auto p = Term();
+    auto signal_exit = std::promise<void>();
+    auto signal = signal_exit.get_future();
+    BTOR2Encoder::decoder(path, ts, p);
+    auto t = std::thread([&] {
+        auto kInd = KInduction(ts, p, safeBound, mux, cv, std::move(signal));
+        kInd.run();
+    });
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    signal_exit.set_value();
+    t.join();
+//    auto kind = KInduction(ts, p);
+//    if (kind.run()) {
+//        logger.log(0, "Proved: IS INVARIANT.");
+//    } else {
+//        logger.log(0, "Unknown.");
+//    }
 }
 
 TEST(KInductionWithBMC, KindWithBMC) {
@@ -113,7 +124,8 @@ TEST(KInductionWithBMC, KindWithBMC) {
     } else {
         logger.log(0, "Something wrong.");
     }
-    exit(0);
+    bmcRun.join();
+    kindRun.join();
 }
 
 TEST(EasyPDRTests, EasyPDR) {
@@ -126,40 +138,40 @@ TEST(EasyPDRTests, EasyPDR) {
     pdr.run();
 }
 
-TEST(FBMCTests, FBMC) {
-    logger.set_verbosity(3);
+TEST(FBMCTests, FBMCWithKind) {
+    logger.set_verbosity(2);
 //    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btor2_BM/ret0024_dir.btor2";
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/cal2.btor2";
-    auto s = BitwuzlaSolverFactory::create(false);
+    auto path = "../../btors/memory.btor2";
+    auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
 
     auto preds = UnorderedTermSet();
-    auto pred_s = BitwuzlaSolverFactory::create(false);
+    auto pred_s = SolverFactory::cvc5Solver();
 
     auto safeStep = int();
     auto mux = std::mutex();
     auto cv = std::condition_variable();
     auto to_pred = TermTranslator(pred_s);
     auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred);
-    fbmc.run(9);
+    fbmc.run(4);
     logger.log(1, "has {} preds.", preds.size());
     logger.log(1, "safe step is {}", safeStep);
-//    logger.log(1, "True preds in 33 steps: ");
-//    for (auto v : preds) {
-//        logger.log(1, "pred: {}", v);
-//    }
+    logger.log(1, "True preds in 33 steps: ");
+    for (auto v : preds) {
+        logger.log(1, "pred: {}", v);
+    }
 
-    auto kind_slv = BitwuzlaSolverFactory::create(false);
+    auto kind_slv = SolverFactory::boolectorSolver();
     auto kind_ts = TransitionSystem(kind_slv);
     auto kind_prop = BTOR2Encoder(path, kind_ts).propvec().at(0);
     auto to_kind_slv = TermTranslator(kind_slv);
-//    logger.log(1, "old_prop = {}", kind_prop);
-    for (auto v : preds) {
+    logger.log(1, "old_prop = {}", kind_prop);
+    for (auto v: preds) {
         kind_prop = kind_slv->make_term(And, kind_prop, to_kind_slv.transfer_term(v));
     }
-//    logger.log(1, "new_prop = {}", kind_prop);
+    logger.log(1, "new_prop = {}", kind_prop);
     auto kind = KInduction(kind_ts, kind_prop);
-    kind.run(9);
+    kind.run(3);
 }
 

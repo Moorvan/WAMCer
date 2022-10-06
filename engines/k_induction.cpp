@@ -7,7 +7,7 @@
 
 namespace wamcer {
     KInduction::KInduction(TransitionSystem &ts, Term &p, int &safeBound, std::mutex &mux,
-                           std::condition_variable &cv)
+                           std::condition_variable &cv, std::future<void> exit_signal)
             : transitionSystem(ts),
               solver(ts.solver()),
               property(p),
@@ -15,7 +15,9 @@ namespace wamcer {
               safeBound(int()),
               safeBoundRef(safeBound),
               muxRef(mux),
-              cvRef(cv) {}
+              cvRef(cv) {
+        this->exit_signal = std::move(exit_signal);
+    }
 
     KInduction::KInduction(TransitionSystem &ts, Term &p)
             : KInduction(ts, p, safeBound, mux, cv) {
@@ -27,7 +29,11 @@ namespace wamcer {
             return false;
         }
         for (int i = 1; i != bound; i++) {
-            while (i > safeBoundRef + 1 && safeBoundRef != defines::allStepSafe) {
+            if (exit_signal.valid() &&
+                exit_signal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+                return false;
+            }
+            while (safeBoundRef != defines::allStepSafe && i > safeBoundRef + 1) {
                 auto lck = std::unique_lock(muxRef);
                 cvRef.wait(lck);
             }
