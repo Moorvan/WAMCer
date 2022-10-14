@@ -7,6 +7,7 @@ add_executable(WAMCer
 add_library(WAMCer-lib
         main.cpp
         frontends/btor2_encoder.cpp
+        frontends/btorSim.cpp
         core/ts.cpp
         core/unroller.cpp
         core/runner.cpp
@@ -17,6 +18,9 @@ add_library(WAMCer-lib
         engines/k_induction.cpp
         engines/pdr.cpp
         engines/fbmc.cpp
+
+        smt-switch/deps/boolector/deps/btor2tools/src/btorsim/btorsimbv.c
+        smt-switch/deps/boolector/deps/btor2tools/src/btorsim/btorsimrng.c
         )
 
 

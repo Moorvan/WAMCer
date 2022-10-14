@@ -136,12 +136,24 @@ namespace wamcer {
         }
 
         template<typename... Args>
-        void log(const std::string& prefix, size_t level, const std::string &format, const Args &... args) const {
+        void err(const std::string &format, const Args &... args) const {
+            std::cout << fmt::format(format, args...) << std::endl;
+            exit(1);
+        }
+
+        template<typename... Args>
+        void log(const std::string &prefix, size_t level, const std::string &format, const Args &... args) const {
             if (level <= verbosity) {
                 std::cout << prefix << fmt::format(format, args...) << std::endl;
             }
         }
 
+        template<typename... Args>
+        void log(const std::string &prefix, std::string end, size_t level, const std::string &format, const Args &... args) const {
+            if (level <= verbosity) {
+                std::cout << prefix << fmt::format(format, args...) << end;
+            }
+        }
 
         /* Logs to the terminal using Python-style format string in a range of
          * verbosities: [lower, upper]

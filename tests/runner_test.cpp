@@ -36,8 +36,8 @@ TEST(RunnerTests, runBMCWithKInduction) {
 
 TEST(RunnerTests, runFBMCWithKInduction) {
     logger.set_verbosity(1);
-    auto path = "../../btors/memory.btor2";
+    auto path = "../../btors/buffer.btor2";
     Runner::runFBMCWithKInduction(path, BTOR2Encoder::decoder, []() {
         return SolverFactory::boolectorSolver();
-    });
+    }, -1, 0, 1);
 }

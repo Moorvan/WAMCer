@@ -5,3 +5,4 @@
 /btors/timeout/
 .vscode/*
 *build/
+/btors/simtest/

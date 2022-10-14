@@ -7,6 +7,9 @@
 #include "utils/timer.h"
 #include "utils/logger.h"
 #include "config.h"
+#include "frontends/btorSim.h"
+#include "frontends/btor2_encoder.h"
+#include "core/solverFactory.h"
 
 using namespace wamcer;
 
@@ -75,5 +78,29 @@ TEST(LoggerTest, Verbose) {
         logger.set_verbosity(2);
     });
     t0.join();
-    logger.log(2, "adaffsdadf");
+}
+
+TEST(Btor, BtorSim) {
+    logger.set_verbosity(2);
+    auto slv = SolverFactory::boolectorSolver();
+    auto path = "../../btors/simtest/count4.btor2";
+//    auto ts = TransitionSystem(slv);
+//    auto p = Term();
+//    BTOR2Encoder::decoder(path, ts, p);
+//    logger.log(0, "ts: {}", ts.trans());
+//    logger.log(0, "init: {}", ts.init());
+//    logger.log(0, "inputs: ");
+//    for (auto &i : ts.inputvars()) {
+//        logger.log(0, "{}", i);
+//    }
+//    logger.log(0, "states: ");
+//    for (auto &i : ts.statevars()) {
+//        logger.log(0, "{}", i);
+//    }
+
+    sim::randomSim(path, slv);
+}
+
+TEST(ABC, abc) {
+//    std::cout << a << std::endl;
 }

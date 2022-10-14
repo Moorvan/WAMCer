@@ -144,6 +144,7 @@ namespace wamcer {
             int curCnt;
             while (true) {
                 curCnt = preds.size();
+                logger.log(defines::logFBMCKindRunner, 1, "run k induction with {} predicates", curCnt);
                 auto signalExit = std::promise<void>();
                 auto signalExitFuture = signalExit.get_future();
                 auto kind0Run = std::thread([&] {
