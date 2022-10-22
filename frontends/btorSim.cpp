@@ -23,15 +23,18 @@ namespace wamcer::sim {
     class BtorSim {
     public:
         BtorSim(std::string filename, SmtSolver solver) :
-                slv(solver), model_path(filename) {
+                slv(solver), model_path(filename), ts(solver), btor2(filename, ts) {
             if (!(model_file = fopen(model_path.c_str(), "r"))) {
                 logger.err(0, "failed to open model file");
             }
             parse();
+            fclose(model_file);
+            states_slv = btor2.statesvec();
+            concrete_states = TermVec();
+            concrete_states_str = std::vector<std::string>();
         }
 
         ~BtorSim() {
-            fclose(model_file);
             for (int64_t i = 0; i < num_format_lines; i++)
                 if (current_state[i]) btorsim_bv_free(current_state[i]);
             for (int64_t i = 0; i < num_format_lines; i++)
@@ -49,17 +52,25 @@ namespace wamcer::sim {
             BTOR2_DELETE (next_state);
         }
 
-        Term run(int seed, int step) {
+        TermVec run(int seed, int step, std::string filepath) {
             BTOR2_CNEWN (current_state, num_format_lines);
             BTOR2_CNEWN (next_state, num_format_lines);
             btorsim_rng_init(&rng, (uint32_t) seed);
             random_simulation(step);
-            return Term();
+            if (filepath != "") {
+                write_into_file(filepath);
+            }
+            return concrete_states;
         }
 
     private:
-
         SmtSolver slv;
+        TransitionSystem ts;
+        BTOR2Encoder btor2;
+        TermVec states_slv;
+        TermVec concrete_states;
+        std::vector<std::string> concrete_states_str;
+
         FILE *model_file;
 
         std::string model_path;
@@ -192,6 +203,7 @@ namespace wamcer::sim {
                 case BTOR2_TAG_xnor:
                 case BTOR2_TAG_xor:
                 case BTOR2_TAG_zero:
+                case BTOR2_TAG_output:
                     break;
 
                 case BTOR2_TAG_dec:
@@ -200,7 +212,6 @@ namespace wamcer::sim {
                 case BTOR2_TAG_inc:
                 case BTOR2_TAG_justice:
                 case BTOR2_TAG_neg:
-                case BTOR2_TAG_output:
                 case BTOR2_TAG_read:
                 case BTOR2_TAG_redxor:
                 case BTOR2_TAG_rol:
@@ -253,6 +264,8 @@ namespace wamcer::sim {
         void initialize_states(int32_t randomly) {
             logger.log(defines::logSim, 2, "initialize states randomly {}", randomly);
             logger.log(defines::logSim, 2, "#0");
+            auto cur = TermVec();
+            auto curs = std::vector<std::string>();
             for (int64_t i = 0; i < BTOR2_COUNT_STACK (states); i++) {
                 Btor2Line *state = BTOR2_PEEK_STACK (states, i);
                 assert (0 <= state->id), assert (state->id < num_format_lines);
@@ -271,6 +284,15 @@ namespace wamcer::sim {
                     else
                         update = btorsim_bv_new(width);
                 }
+
+                auto value = slv->make_term(btorsim_bv_to_uint64(update), states_slv[i]->get_sort());
+                auto eq = slv->make_term(Equal, states_slv[i], value);
+                cur.push_back(eq);
+
+//                curs.push_back("0," + states_slv[i]->to_string() + "," + states_slv[i]->get_sort()->to_string() + "," +
+//                               value->to_string());
+                curs.push_back(value->to_string());
+
                 update_current_state(state->id, update);
                 if (!init) {
                     btorsim_bv_print_without_new_line(update);
@@ -278,6 +300,8 @@ namespace wamcer::sim {
                     fputc('\n', stdout);
                 }
             }
+            concrete_states.push_back(slv->make_term(And, cur));
+            concrete_states_str.push_back(string_join(curs, ","));
         }
 
         BtorSimBitVector *simulate(int64_t id) {
@@ -497,11 +521,21 @@ namespace wamcer::sim {
             logger.log(defines::logSim, 2, "transition {}", k);
             for (int64_t i = 0; i < num_format_lines; i++) delete_current_state(i);
             logger.log(defines::logSim, 2, "#{}", k);
+            auto cur = TermVec();
+            auto curs = std::vector<std::string>();
             for (int64_t i = 0; i < BTOR2_COUNT_STACK (states); i++) {
                 Btor2Line *state = BTOR2_PEEK_STACK (states, i);
                 assert (0 <= state->id), assert (state->id < num_format_lines);
                 BtorSimBitVector *update = next_state[state->id];
                 assert (update);
+
+                auto value = slv->make_term(btorsim_bv_to_uint64(update), states_slv[i]->get_sort());
+                auto eq = slv->make_term(Equal, states_slv[i], value);
+                cur.push_back(eq);
+//                curs.push_back(std::to_string(k) + "," + states_slv[i]->to_string() + "," +
+//                               states_slv[i]->get_sort()->to_string() + "," + value->to_string());
+                curs.push_back(value->to_string());
+
                 update_current_state(state->id, update);
                 next_state[state->id] = 0;
                 logger.log(defines::logSim, " ", 2, "{}", i);
@@ -511,6 +545,8 @@ namespace wamcer::sim {
                     logger.log(defines::logSim, 2, "{}#{}", state->symbol, k);
                 }
             }
+            concrete_states.push_back(slv->make_term(And, cur));
+            concrete_states_str.push_back(string_join(curs, ","));
         }
 
         void delete_current_state(int64_t id) {
@@ -518,10 +554,36 @@ namespace wamcer::sim {
             if (current_state[id]) btorsim_bv_free(current_state[id]);
             current_state[id] = 0;
         }
+
+        std::string string_join(const std::vector<std::string> &v, const std::string &c) {
+            auto ss = std::stringstream();
+            for (uint32_t i = 0; i < v.size(); i++) {
+                if (i != 0) ss << c;
+                ss << v[i];
+            }
+            return ss.str();
+        }
+
+        void write_into_file(const std::string &filename) {
+            auto file = std::ofstream(filename);
+            if (!file.is_open()) {
+                logger.log(defines::logSim, 0, "could not open file {}", filename);
+            }
+            auto names = std::vector<std::string>();
+            std::for_each(states_slv.begin(), states_slv.end(), [&names](auto &i) {
+                names.push_back(i->to_string());
+            });
+            file << "k," << string_join(names, ",") << std::endl;
+            for (auto i = 0; i < concrete_states_str.size(); i++) {
+                file << i << "," << concrete_states_str[i] << std::endl;
+            }
+            file.close();
+        }
     };
 
-    Term randomSim(std::string path, SmtSolver solver, int bound, int seed) {
+    TermVec randomSim(std::string path, SmtSolver solver, std::string filepath, int bound, int seed) {
         auto sim = BtorSim(path, solver);
-        return sim.run(seed, bound);
+        return sim.run(seed, bound, filepath);
     }
+
 }

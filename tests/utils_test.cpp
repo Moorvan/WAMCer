@@ -81,26 +81,12 @@ TEST(LoggerTest, Verbose) {
 }
 
 TEST(Btor, BtorSim) {
-    logger.set_verbosity(2);
+    logger.set_verbosity(1);
     auto slv = SolverFactory::boolectorSolver();
-    auto path = "../../btors/simtest/count4.btor2";
-//    auto ts = TransitionSystem(slv);
-//    auto p = Term();
-//    BTOR2Encoder::decoder(path, ts, p);
-//    logger.log(0, "ts: {}", ts.trans());
-//    logger.log(0, "init: {}", ts.init());
-//    logger.log(0, "inputs: ");
-//    for (auto &i : ts.inputvars()) {
-//        logger.log(0, "{}", i);
+    auto path = "../../btors/counter-101.btor2";
+    auto terms = sim::randomSim(path, slv, "../../tests/out/a.csv", 20, 2031213);
+//    for (auto &t : terms) {
+//        logger.log(0, "{}", t);
 //    }
-//    logger.log(0, "states: ");
-//    for (auto &i : ts.statevars()) {
-//        logger.log(0, "{}", i);
-//    }
-
-    sim::randomSim(path, slv);
 }
 
-TEST(ABC, abc) {
-//    std::cout << a << std::endl;
-}

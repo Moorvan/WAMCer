@@ -14,14 +14,20 @@ extern "C" {
 }
 
 #include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
 #include "smt-switch/smt.h"
 #include "utils/logger.h"
 #include "utils/defines.h"
+#include "core/ts.h"
+#include "frontends/btor2_encoder.h"
 
 using namespace smt;
+using namespace wamcer;
 
 namespace wamcer::sim {
-    Term randomSim(std::string path, SmtSolver solver, int bound = 20, int seed = 0);
+    TermVec randomSim(std::string path, SmtSolver solver, std::string filepath = "", int bound = 20, int seed = 0);
 }
 
 
