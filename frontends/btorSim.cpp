@@ -718,9 +718,36 @@ namespace wamcer::sim {
                                 assert (init->nargs == 2);
                                 assert (init->args[0] == state->id);
                                 BtorSimState update = simulate(init->args[1]);
+                                BtorSimArrayModel *am;
+                                auto kvs = std::vector<std::string>();
+                                auto array_terms = std::vector<Term>();
+                                auto key_sort = Sort();
+                                auto value_sort = Sort();
                                 switch (update.type) {
                                     case BtorSimState::Type::ARRAY:
                                         update_current_state(state->id, update);
+
+                                        am = update.array_state;
+                                        key_sort = slv->make_sort(BV, am->index_width);
+                                        value_sort = slv->make_sort(BV, am->element_width);
+
+                                        for (auto d: am->data) {
+                                            auto key = slv->make_term(d.first, key_sort, 2);
+                                            auto value = slv->make_term((int64_t) btorsim_bv_to_uint64(d.second),
+                                                                        value_sort);
+                                            auto v = slv->make_term(Select, states_slv[i], key);
+                                            array_terms.push_back(slv->make_term(Equal, v, value));
+                                            kvs.push_back(
+                                                    d.first + ":" + std::to_string(btorsim_bv_to_uint64(d.second)));
+                                        }
+                                        curs.push_back(string_join(kvs, ";"));
+                                        if (!array_terms.empty()) {
+                                            if (array_terms.size() == 1) {
+                                                cur.push_back(array_terms[0]);
+                                            } else {
+                                                cur.push_back(slv->make_term(And, array_terms));
+                                            }
+                                        }
                                         break;
                                     case BtorSimState::Type::BITVEC: {
                                         Btor2Line *li =
@@ -732,6 +759,13 @@ namespace wamcer::sim {
                                         BtorSimArrayModel *am = new BtorSimArrayModel(
                                                 li->sort.bitvec.width, le->sort.bitvec.width);
                                         am->const_init = update.bv_state;
+
+                                        curs.push_back(btorsim_bv_to_string(am->const_init));
+                                        auto key = slv->make_symbol("key" + std::to_string(time(0)), key_sort);
+                                        auto value = slv->make_term((int64_t) btorsim_bv_to_uint64(am->const_init), value_sort);
+                                        auto v = slv->make_term(Select, states_slv[i], key);
+                                        cur.push_back(slv->make_term(Equal, v, value));
+
                                         update_current_state(state->id, am);
                                     }
                                         break;
@@ -750,8 +784,6 @@ namespace wamcer::sim {
                                 if (randomly) {
                                     am->random_seed = btorsim_rng_rand(&rng);
                                 }
-
-                                // TODO: record array state
                                 update_current_state(state->id, am);
                             }
                             break;
@@ -772,7 +804,6 @@ namespace wamcer::sim {
                 }
             }
         }
-
 
         void initialize_inputs(int64_t k, int32_t randomize) {
             logger.log(defines::logSim, 1, "initializing inputs at @{}", k);
@@ -877,6 +908,11 @@ namespace wamcer::sim {
                 auto value = Term();
                 auto eq = Term();
                 BtorSimBitVector *bv;
+                BtorSimArrayModel *am;
+                auto kvs = std::vector<std::string>();
+                auto array_terms = std::vector<Term>();
+                auto key_sort = Sort();
+                auto value_sort = Sort();
                 switch (update.type) {
                     case BtorSimState::Type::BITVEC:
                         bv = update.bv_state;
@@ -886,7 +922,25 @@ namespace wamcer::sim {
                         curs.push_back(value->to_string());
                         break;
                     case BtorSimState::Type::ARRAY:
-                        // TODO: handle arrays
+                        am = update.array_state;
+                        key_sort = slv->make_sort(BV, am->index_width);
+                        value_sort = slv->make_sort(BV, am->element_width);
+                        for (auto d: am->data) {
+                            auto key = slv->make_term(d.first, key_sort, 2);
+                            auto value = slv->make_term((int64_t) btorsim_bv_to_uint64(d.second),
+                                                        value_sort);
+                            auto v = slv->make_term(Select, states_slv[i], key);
+                            array_terms.push_back(slv->make_term(Equal, v, value));
+                            kvs.push_back(d.first + ":" + std::to_string(btorsim_bv_to_uint64(d.second)));
+                        }
+                        curs.push_back(string_join(kvs, ";"));
+                        if (!array_terms.empty()) {
+                            if (array_terms.size() == 1) {
+                                cur.push_back(array_terms[0]);
+                            } else {
+                                cur.push_back(slv->make_term(And, array_terms));
+                            }
+                        }
                         break;
                     default:
                         break;
