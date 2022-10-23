@@ -14,3 +14,10 @@ cd smt-switch
   # shellcheck disable=SC2103
   cd ..
 cd ..
+
+cd deps/btor2tools
+  ./configure.sh --static
+  cd build
+    make -j8
+  cd ..
+cd ../..

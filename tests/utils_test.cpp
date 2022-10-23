@@ -83,10 +83,10 @@ TEST(LoggerTest, Verbose) {
 TEST(Btor, BtorSim) {
     logger.set_verbosity(1);
     auto slv = SolverFactory::boolectorSolver();
-    auto path = "../../btors/counter-101.btor2";
-    auto terms = sim::randomSim(path, slv, "../../tests/out/a.csv", 20, 2031213);
-//    for (auto &t : terms) {
-//        logger.log(0, "{}", t);
-//    }
+    auto path = "../../btors/memory.btor2";
+    auto terms = sim::randomSim(path, slv, "../../tests/out/a.csv", 100);
+    for (auto &t : terms) {
+        logger.log(0, "{}", t);
+    }
 }
 

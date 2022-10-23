@@ -13,6 +13,8 @@ extern "C" {
 #include "util/btor2stack.h"
 }
 
+#include "btorsim/btorsimstate.h"
+#include "btorsim/btorsimhelpers.h"
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -27,7 +29,7 @@ using namespace smt;
 using namespace wamcer;
 
 namespace wamcer::sim {
-    TermVec randomSim(std::string path, SmtSolver solver, std::string filepath = "", int bound = 20, int seed = 0);
+    TermVec randomSim(std::string path, SmtSolver solver, std::string filepath = "", int bound = 20, int seed = (int)time(0));
 }
 
 
