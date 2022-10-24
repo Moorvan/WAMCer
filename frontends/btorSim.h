@@ -29,7 +29,8 @@ using namespace smt;
 using namespace wamcer;
 
 namespace wamcer::sim {
-    TermVec randomSim(std::string path, SmtSolver solver, std::string filepath = "", int bound = 20, int seed = (int)time(0));
+    TermVec
+    randomSim(std::string path, SmtSolver solver, int bound = 20, int seed = (int) time(0), std::string filepath = "");
 }
 
 

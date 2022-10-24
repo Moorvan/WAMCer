@@ -3,7 +3,6 @@
 //
 
 
-#include <iostream>
 #include <gtest/gtest.h>
 #include <thread>
 #include <chrono>
@@ -277,4 +276,16 @@ TEST(SolverTests, UnsatCore) {
             logger.log(0, "{}", t);
         }
     }
+}
+
+TEST(TranslateTests, Trans) {
+    auto s = SolverFactory::boolectorSolver();
+    auto s1 = SolverFactory::boolectorSolver();
+    auto s2 = SolverFactory::boolectorSolver();
+    auto trans = TermTranslator(s);
+    auto t1 = s1->make_symbol("a", s1->make_sort(BOOL));
+    auto t2 = s2->make_symbol("b", s2->make_sort(BOOL));
+    auto st1 = trans.transfer_term(t1);
+    auto st2 = trans.transfer_term(t2);
+    auto t1andt2 = s->make_term(And, st1, st2);
 }

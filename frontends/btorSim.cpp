@@ -1017,7 +1017,7 @@ namespace wamcer::sim {
         }
     };
 
-    TermVec randomSim(std::string path, SmtSolver solver, std::string filepath, int bound, int seed) {
+    TermVec randomSim(std::string path, SmtSolver solver, int bound, int seed, std::string filepath) {
         auto sim = BtorSim(path, solver);
         return sim.run(seed, bound, filepath);
     }

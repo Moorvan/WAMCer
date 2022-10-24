@@ -18,14 +18,13 @@ add_library(WAMCer-lib
         engines/k_induction.cpp
         engines/pdr.cpp
         engines/fbmc.cpp
+        engines/filterWithSimulation.cpp
 
         deps/btor2tools/src/btorsim/btorsimbv.c
         deps/btor2tools/src/btorsim/btorsimrng.c
         deps/btor2tools/src/btorsim/btorsimstate.cpp
         deps/btor2tools/src/btorsim/btorsimam.cpp
         deps/btor2tools/src/btorsim/btorsimhelpers.cpp
-#        smt-switch/deps/boolector/deps/btor2tools/src/btorsim/btorsimbv.c
-#        smt-switch/deps/boolector/deps/btor2tools/src/btorsim/btorsimrng.c
         )
 
 
@@ -53,7 +52,6 @@ ADD_DEFINITIONS("-DHAS_BOOST")
 
 target_include_directories(WAMCer-lib PUBLIC
         smt-switch/local/include
-#        smt-switch/deps/boolector/deps/btor2tools/src
         deps/btor2tools/src
         ${GMP_INCLUDE_DIR}
         ${PROJECT_SOURCE_DIR})

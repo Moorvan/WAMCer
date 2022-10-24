@@ -100,7 +100,8 @@ namespace wamcer {
     }
 
     bool Runner::runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
-                                       smt::SmtSolver (*solverFactory)(), int bound, int termRelationLevel, int complexPredsLevel) {
+                                       smt::SmtSolver (*solverFactory)(), int bound, int termRelationLevel,
+                                       int complexPredsLevel, int simFilterStep) {
         logger.log(defines::logFBMCKindRunner, 0, "file: {}", path);
         logger.log(defines::logFBMCKindRunner, 0, "FBMC + K-Induction running...");
         auto safe = int();
@@ -135,6 +136,24 @@ namespace wamcer {
             cv.wait(lck);
         }
         bmcRun.detach();
+//        if (simFilterStep > 0) {
+//            auto simFilterRun = std::thread([&] {
+//                auto simFilter = FilterWithSimulation(path, simFilterStep);
+//                {
+//                    auto lock = std::unique_lock(mux);
+//                    auto eraseTerms = TermVec();
+//                    for (auto pred: preds) {
+//                        if(!simFilter.checkSat(pred)) {
+//                            eraseTerms.push_back(pred);
+//                        }
+//                    }
+//                    for (auto i : eraseTerms) {
+//                        preds.erase(i);
+//                    }
+//                }
+//            });
+//            simFilterRun.detach();
+//        }
 
         auto wakeup = std::thread([&] {
             timer::wakeEvery(config::wakeKindCycle, cv, isFinished);
@@ -155,14 +174,17 @@ namespace wamcer {
                     decoder(path, ts, p);
                     {
                         auto lck = std::unique_lock(mux);
+                        std::cout << preds.size() << std::endl;
                         for (auto v: preds) {
                             p = kind_slv->make_term(And, p, to_ts.transfer_term(v));
                         }
+                        curCnt = preds.size();
+                        logger.log(0, "preds.size={}: ", preds.size());
                     }
                     auto kind = KInduction(ts, p, safe, mux, cv, std::move(signalExitFuture));
                     auto kindRes = kind.run();
                     if (kindRes) {
-                        logger.log(defines::logKind, 0, "Result: safe. with {} predicates.", curCnt);
+                        logger.log(defines::logKind, 0, "Result: safe. with {} predicates: ", curCnt);
                         res = true;
                         finish.notify_all();
                     }
