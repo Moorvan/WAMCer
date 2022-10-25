@@ -139,7 +139,7 @@ TEST(EasyPDRTests, EasyPDR) {
 }
 
 TEST(FBMCTests, FBMCWithKind) {
-    logger.set_verbosity(2);
+    logger.set_verbosity(1);
 //    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btor2_BM/ret0024_dir.btor2";
     auto path = "../../btors/memory.btor2";
     auto s = SolverFactory::boolectorSolver();
@@ -154,13 +154,34 @@ TEST(FBMCTests, FBMCWithKind) {
     auto cv = std::condition_variable();
     auto to_pred = TermTranslator(pred_s);
     auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred);
-    fbmc.run(4);
+    fbmc.run(13);
     logger.log(1, "has {} preds.", preds.size());
-    logger.log(1, "safe step is {}", safeStep);
-    logger.log(1, "True preds in 33 steps: ");
-    for (auto v : preds) {
-        logger.log(1, "pred: {}", v);
+//    logger.log(1, "safe step is {}", safeStep);
+//    logger.log(1, "True preds in 33 steps: ");
+//    for (auto v : preds) {
+//        logger.log(1, "{}", v);
+//    }
+
+    auto simFilter = FilterWithSimulation(path, 30);
+    auto eraseTerms = TermVec();
+    for (auto pred: preds) {
+        if(!simFilter.checkSat(pred)) {
+            eraseTerms.push_back(pred);
+        }
     }
+    logger.log(1, "sim filter erase {} preds.", eraseTerms.size());
+    for (auto i : eraseTerms) {
+        preds.erase(i);
+    }
+    logger.log(1, "has {} preds.", preds.size());
+
+    logger.log(1, "test pred pass sim check...");
+    if (simFilter.checkSat(p)) {
+        logger.log(1, "pred is pass sim check.");
+    } else {
+        logger.log(1, "pred is not pass sim check.");
+    }
+
 
     auto kind_slv = SolverFactory::boolectorSolver();
     auto kind_ts = TransitionSystem(kind_slv);
@@ -172,6 +193,6 @@ TEST(FBMCTests, FBMCWithKind) {
     }
     logger.log(1, "new_prop = {}", kind_prop);
     auto kind = KInduction(kind_ts, kind_prop);
-    kind.run(3);
+    kind.run(10);
 }
 

@@ -31,6 +31,11 @@ namespace wamcer {
         constructTermsRelation();
         constructComplexPreds();
 
+        logger.log(defines::logFBMC, 2, "{} preds: ", preds.size());
+        for (auto &pred : preds) {
+            logger.log(defines::logFBMC, 2, "  {}", pred);
+        }
+
         cv.notify_all();
         logger.log(defines::logFBMC, 2, "The initialization has {} preds.", preds.size());
         if (!step0()) {
@@ -163,6 +168,7 @@ namespace wamcer {
                             auto v1SltV2 = solver->make_term(BVSlt, v1, v2);
                             addToBasePreds({v1EqV2, v1UltV2, v1SltV2});
                         } else {
+                            logger.log(defines::logFBMC, 2, "{}", v1EqV2);
                             addToBasePreds({v1EqV2});
                         }
                     }

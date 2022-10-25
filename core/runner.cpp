@@ -136,24 +136,24 @@ namespace wamcer {
             cv.wait(lck);
         }
         bmcRun.detach();
-//        if (simFilterStep > 0) {
-//            auto simFilterRun = std::thread([&] {
-//                auto simFilter = FilterWithSimulation(path, simFilterStep);
-//                {
-//                    auto lock = std::unique_lock(mux);
-//                    auto eraseTerms = TermVec();
-//                    for (auto pred: preds) {
-//                        if(!simFilter.checkSat(pred)) {
-//                            eraseTerms.push_back(pred);
-//                        }
-//                    }
-//                    for (auto i : eraseTerms) {
-//                        preds.erase(i);
-//                    }
-//                }
-//            });
-//            simFilterRun.detach();
-//        }
+        if (simFilterStep > 0) {
+            auto simFilterRun = std::thread([&] {
+                auto simFilter = FilterWithSimulation(path, simFilterStep);
+                {
+                    auto lock = std::unique_lock(mux);
+                    auto eraseTerms = TermVec();
+                    for (auto pred: preds) {
+                        if(!simFilter.checkSat(pred)) {
+                            eraseTerms.push_back(pred);
+                        }
+                    }
+                    for (auto i : eraseTerms) {
+                        preds.erase(i);
+                    }
+                }
+            });
+            simFilterRun.detach();
+        }
 
         auto wakeup = std::thread([&] {
             timer::wakeEvery(config::wakeKindCycle, cv, isFinished);
