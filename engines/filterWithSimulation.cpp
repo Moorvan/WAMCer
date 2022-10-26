@@ -27,9 +27,11 @@ namespace wamcer {
         slv->assert_formula(tt);
         for (const auto &sim_state: sim_states) {
             if (slv->check_sat_assuming({sim_state}).is_unsat()) {
+                slv->pop();
                 return false;
             }
         }
+        slv->pop();
         return true;
     }
 }

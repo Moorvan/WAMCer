@@ -141,7 +141,7 @@ TEST(EasyPDRTests, EasyPDR) {
 TEST(FBMCTests, FBMCWithKind) {
     logger.set_verbosity(1);
 //    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btor2_BM/ret0024_dir.btor2";
-    auto path = "../../btors/memory.btor2";
+    auto path = "../../btors/buffer.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
@@ -181,7 +181,7 @@ TEST(FBMCTests, FBMCWithKind) {
     } else {
         logger.log(1, "pred is not pass sim check.");
     }
-
+    logger.log(1, "has {} preds:", preds.size());
 
     auto kind_slv = SolverFactory::boolectorSolver();
     auto kind_ts = TransitionSystem(kind_slv);
