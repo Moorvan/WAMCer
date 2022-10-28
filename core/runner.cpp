@@ -161,7 +161,7 @@ namespace wamcer {
                 logger.log(defines::logFBMCKindRunner, 1, "run k induction with {} predicates", curCnt);
                 auto signalExit = std::promise<void>();
                 auto signalExitFuture = signalExit.get_future();
-                auto kind0Run = std::thread([&] {
+                auto kind0Run = std::thread([&](std::future<void> signalExitFuture) {
                     auto kind_slv = solverFactory();
                     auto ts = TransitionSystem(kind_slv);
                     auto to_ts = TermTranslator(kind_slv);
@@ -178,7 +178,7 @@ namespace wamcer {
                         res = true;
                         finish.notify_all();
                     }
-                });
+                }, std::move(signalExitFuture));
                 while (preds.size() == curCnt) {
                     auto lck = std::unique_lock(mux);
                     cv.wait(lck);

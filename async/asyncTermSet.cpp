@@ -6,6 +6,10 @@
 
 namespace wamcer {
 
+    AsyncTermSet::AsyncTermSet() {
+        data = new smt::UnorderedTermSet();
+    }
+
     void AsyncTermSet::insert(smt::Term term) {
         auto lck = std::unique_lock(mux);
         data->insert(term);
@@ -47,5 +51,6 @@ namespace wamcer {
         auto lck = std::shared_lock(mux);
         return data->size();
     }
+
 
 }

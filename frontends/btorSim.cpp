@@ -983,6 +983,7 @@ namespace wamcer::sim {
             simulate_step(0, randomize);
 
             for (int64_t i = 1; i <= k; i++) {
+                logger.log(defines::logSim, 1, "random simulation step {}", i);
                 transition(i);
                 initialize_inputs(i, randomize);
                 simulate_step(i, randomize);

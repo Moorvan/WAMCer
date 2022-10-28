@@ -83,8 +83,9 @@ TEST(LoggerTest, Verbose) {
 TEST(Btor, BtorSim) {
     logger.set_verbosity(1);
     auto slv = SolverFactory::boolectorSolver();
-    auto path = "../../btors/memory.btor2";
-    auto terms = sim::randomSim(path, slv, 100, (int) time(0), "../../tests/out/b.csv");
+    auto path = "../../btors/hwmcc/arbitrated_top_n3_w8_d128_e0.btor2";
+    auto terms = sim::randomSim(path, slv, 1000, (int) time(0), "../../tests/out/b.csv");
+    logger.log(0, "terms.size() = {}", terms.size());
     for (auto &t: terms) {
         logger.log(0, "{}", t);
     }

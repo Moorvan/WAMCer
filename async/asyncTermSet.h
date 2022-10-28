@@ -12,9 +12,7 @@
 namespace wamcer {
     class AsyncTermSet {
     public:
-        AsyncTermSet() {
-            data = new smt::UnorderedTermSet();
-        };
+        AsyncTermSet();
 
 //        ~AsyncTermSet() {
 //            delete data;
