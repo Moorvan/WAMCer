@@ -7,7 +7,7 @@
 
 namespace wamcer {
 
-    FBMC::FBMC(TransitionSystem &ts, Term &property, UnorderedTermSet &predicates, int &safeStep, std::mutex &mux,
+    FBMC::FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep, std::mutex &mux,
                std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel, int complexPredsLevel) :
             preds(predicates),
             mux(mux),
@@ -32,12 +32,13 @@ namespace wamcer {
         constructComplexPreds();
 
         logger.log(defines::logFBMC, 2, "{} preds: ", preds.size());
-        for (auto &pred : preds) {
-            logger.log(defines::logFBMC, 2, "  {}", pred);
-        }
+        preds.map([](Term t) {
+            logger.log(defines::logFBMC, 3, "{}", t);
+        });
 
-        cv.notify_all();
         logger.log(defines::logFBMC, 2, "The initialization has {} preds.", preds.size());
+        cv.notify_all();
+
         if (!step0()) {
             logger.log(defines::logFBMC, 0, "Check failed at init step.");
             return false;
@@ -135,23 +136,28 @@ namespace wamcer {
     }
 
     void FBMC::filterPredsAt(int step) {
-        auto notPass = TermVec();
-        {
-            auto lck = std::unique_lock(mux);
-            for (auto v: preds) {
-                auto slv_v = to_solver.transfer_term(v);
-                auto v_at_step = unroller.at_time(slv_v, step);
-                auto not_v = solver->make_term(Not, v_at_step);
-                auto res = solver->check_sat_assuming({not_v});
-                if (res.is_sat()) {
-                    notPass.push_back(v);
-                }
-            }
+        preds.filter([&](Term t) -> bool {
+            auto slv_t = to_solver.transfer_term(t);
+            auto t_at_step = unroller.at_time(slv_t, step);
+            auto not_t = solver->make_term(Not, t_at_step);
+            return solver->check_sat_assuming({not_t}).is_sat();
 
-            for (auto v: notPass) {
-                preds.erase(v);
-            }
-        }
+        });
+//        auto notPass = TermVec();
+//            for (auto v: preds) {
+//                auto slv_v = to_solver.transfer_term(v);
+//                auto v_at_step = unroller.at_time(slv_v, step);
+//                auto not_v = solver->make_term(Not, v_at_step);
+//                auto res = solver->check_sat_assuming({not_v});
+//                if (res.is_sat()) {
+//                    notPass.push_back(v);
+//                }
+//            }
+//
+//            for (auto v: notPass) {
+//                preds.erase(v);
+//            }
+//        }
     }
 
     void FBMC::constructTermsRelation() {
@@ -168,7 +174,7 @@ namespace wamcer {
                             auto v1SltV2 = solver->make_term(BVSlt, v1, v2);
                             addToBasePreds({v1EqV2, v1UltV2, v1SltV2});
                         } else {
-                            logger.log(defines::logFBMC, 2, "{}", v1EqV2);
+//                            logger.log(defines::logFBMC, 2, "{}", v1EqV2);
                             addToBasePreds({v1EqV2});
                         }
                     }
@@ -236,6 +242,7 @@ namespace wamcer {
     }
 
     void FBMC::constructComplexPreds() {
+        auto lck = std::unique_lock(mux);
         for (auto t: basePreds) {
             preds.insert(to_preds.transfer_term(t));
         }

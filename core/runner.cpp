@@ -99,6 +99,8 @@ namespace wamcer {
         }
     }
 
+
+
     bool Runner::runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
                                        smt::SmtSolver (*solverFactory)(), int bound, int termRelationLevel,
                                        int complexPredsLevel, int simFilterStep) {
@@ -114,7 +116,8 @@ namespace wamcer {
         auto bmcSlv = solverFactory();
         auto toPredSolver = solverFactory();
         auto toPred = TermTranslator(toPredSolver);
-        auto preds = UnorderedTermSet();
+
+        auto preds = AsyncTermSet();
 
         auto bmcRun = std::thread([&] {
             auto bmcTs = TransitionSystem(bmcSlv);
@@ -135,22 +138,14 @@ namespace wamcer {
             auto lck = std::unique_lock(mux);
             cv.wait(lck);
         }
+        logger.log(defines::logFBMCKindRunner, 1, "Predicates: {}.", preds.size());
         bmcRun.detach();
         if (simFilterStep > 0) {
             auto simFilterRun = std::thread([&] {
                 auto simFilter = FilterWithSimulation(path, simFilterStep);
-                {
-                    auto lock = std::unique_lock(mux);
-                    auto eraseTerms = TermVec();
-                    for (auto pred: preds) {
-                        if(!simFilter.checkSat(pred)) {
-                            eraseTerms.push_back(pred);
-                        }
-                    }
-                    for (auto i : eraseTerms) {
-                        preds.erase(i);
-                    }
-                }
+                preds.filter([&](Term t) -> bool {
+                    return not simFilter.checkSat(t);
+                });
             });
             simFilterRun.detach();
         }
@@ -172,15 +167,10 @@ namespace wamcer {
                     auto to_ts = TermTranslator(kind_slv);
                     auto p = Term();
                     decoder(path, ts, p);
-                    {
-                        auto lck = std::unique_lock(mux);
-                        std::cout << preds.size() << std::endl;
-                        for (auto v: preds) {
-                            p = kind_slv->make_term(And, p, to_ts.transfer_term(v));
-                        }
-                        curCnt = preds.size();
-                        logger.log(0, "preds.size={}: ", preds.size());
-                    }
+                    std::cout << preds.size() << std::endl;
+                    p = preds.reduce([&](Term a, Term b) -> Term {
+                        return kind_slv->make_term(And, a, to_ts.transfer_term(b));
+                    }, p);
                     auto kind = KInduction(ts, p, safe, mux, cv, std::move(signalExitFuture));
                     auto kindRes = kind.run();
                     if (kindRes) {

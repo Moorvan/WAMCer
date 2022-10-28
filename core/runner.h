@@ -15,6 +15,7 @@
 #include "config.h"
 #include "utils/defines.h"
 #include "utils/timer.h"
+#include "async/asyncTermSet.h"
 
 namespace wamcer {
     class Runner {

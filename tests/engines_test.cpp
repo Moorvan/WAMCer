@@ -139,40 +139,29 @@ TEST(EasyPDRTests, EasyPDR) {
 }
 
 TEST(FBMCTests, FBMCWithKind) {
-    logger.set_verbosity(1);
+    logger.set_verbosity(2);
 //    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btor2_BM/ret0024_dir.btor2";
-    auto path = "../../btors/buffer.btor2";
+    auto path = "../../btors/memory.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
 
-    auto preds = UnorderedTermSet();
+    auto preds = AsyncTermSet();
     auto pred_s = SolverFactory::cvc5Solver();
 
     auto safeStep = int();
     auto mux = std::mutex();
     auto cv = std::condition_variable();
     auto to_pred = TermTranslator(pred_s);
-    auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred);
+    auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred, 0, 1);
     fbmc.run(13);
     logger.log(1, "has {} preds.", preds.size());
-//    logger.log(1, "safe step is {}", safeStep);
-//    logger.log(1, "True preds in 33 steps: ");
-//    for (auto v : preds) {
-//        logger.log(1, "{}", v);
-//    }
+    logger.log(1, "safe step is {}", safeStep);
 
     auto simFilter = FilterWithSimulation(path, 30);
-    auto eraseTerms = TermVec();
-    for (auto pred: preds) {
-        if(!simFilter.checkSat(pred)) {
-            eraseTerms.push_back(pred);
-        }
-    }
-    logger.log(1, "sim filter erase {} preds.", eraseTerms.size());
-    for (auto i : eraseTerms) {
-        preds.erase(i);
-    }
+    preds.filter([&](Term t) -> bool {
+        return not simFilter.checkSat(t);
+    });
     logger.log(1, "has {} preds.", preds.size());
 
     logger.log(1, "test pred pass sim check...");
@@ -188,9 +177,9 @@ TEST(FBMCTests, FBMCWithKind) {
     auto kind_prop = BTOR2Encoder(path, kind_ts).propvec().at(0);
     auto to_kind_slv = TermTranslator(kind_slv);
     logger.log(1, "old_prop = {}", kind_prop);
-    for (auto v: preds) {
-        kind_prop = kind_slv->make_term(And, kind_prop, to_kind_slv.transfer_term(v));
-    }
+    kind_prop = preds.reduce([&](Term a, Term b) -> Term {
+        return kind_slv->make_term(And, a, to_kind_slv.transfer_term(b));
+    }, kind_prop);
     logger.log(1, "new_prop = {}", kind_prop);
     auto kind = KInduction(kind_ts, kind_prop);
     kind.run(10);

@@ -19,13 +19,12 @@ add_library(WAMCer-lib
         engines/pdr.cpp
         engines/fbmc.cpp
         engines/filterWithSimulation.cpp
-
         deps/btor2tools/src/btorsim/btorsimbv.c
         deps/btor2tools/src/btorsim/btorsimrng.c
         deps/btor2tools/src/btorsim/btorsimstate.cpp
         deps/btor2tools/src/btorsim/btorsimam.cpp
         deps/btor2tools/src/btorsim/btorsimhelpers.cpp
-        )
+        async/asyncTermSet.cpp)
 
 
 # link smt-switch and gmp, or boost

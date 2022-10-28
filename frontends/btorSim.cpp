@@ -103,9 +103,9 @@ namespace wamcer::sim {
                 case BTOR2_TAG_input: {
                     int64_t i = (int64_t) inputs.size();
                     if (l->symbol) {
-                        logger.log(defines::logSim, 2, "input {} {} at line {}", i, l->symbol, l->lineno);
+                        logger.log(defines::logSim, 3, "input {} {} at line {}", i, l->symbol, l->lineno);
                     } else {
-                        logger.log(defines::logSim, 2, "input {} at line {}", i, l->lineno);
+                        logger.log(defines::logSim, 3, "input {} at line {}", i, l->lineno);
                     }
                     inputs.push_back(l);
                 }
@@ -118,11 +118,11 @@ namespace wamcer::sim {
                 case BTOR2_TAG_sort: {
                     switch (l->sort.tag) {
                         case BTOR2_TAG_SORT_bitvec:
-                            logger.log(defines::logSim, 2, "sort bitvec {} at line {}", l->sort.bitvec.width,
+                            logger.log(defines::logSim, 3, "sort bitvec {} at line {}", l->sort.bitvec.width,
                                        l->lineno);
                             break;
                         case BTOR2_TAG_SORT_array:
-                            logger.log(defines::logSim, 2, "sort array {} {} at line {}",
+                            logger.log(defines::logSim, 3, "sort array {} {} at line {}",
                                        l->sort.array.index, l->sort.array.element, l->lineno);
                             break;
                         default:
@@ -136,9 +136,9 @@ namespace wamcer::sim {
                 case BTOR2_TAG_state: {
                     int64_t i = (int64_t) states.size();
                     if (l->symbol) {
-                        logger.log(defines::logSim, 2, "state {} {} at line {}", i, l->symbol, l->lineno);
+                        logger.log(defines::logSim, 3, "state {} {} at line {}", i, l->symbol, l->lineno);
                     } else {
-                        logger.log(defines::logSim, 2, "state {} at line {}", i, l->lineno);
+                        logger.log(defines::logSim, 3, "state {} at line {}", i, l->lineno);
                     }
                     states.push_back(l);
                 }
@@ -265,19 +265,19 @@ namespace wamcer::sim {
 
         void update_current_state(int64_t id, BtorSimState &s) {
             assert (0 <= id), assert (id < num_format_lines);
-            logger.log(defines::logSim, 2, "update_current_state {}", id);
+            logger.log(defines::logSim, 3, "update_current_state {}", id);
             current_state[id].update(s);
         }
 
         void update_current_state(int64_t id, BtorSimArrayModel *am) {
             assert (0 <= id), assert (id < num_format_lines);
-            logger.log(defines::logSim, 2, "update_current_state {}", id);
+            logger.log(defines::logSim, 3, "update_current_state {}", id);
             current_state[id].update(am);
         }
 
         void update_current_state(int64_t id, BtorSimBitVector *bv) {
             assert (0 <= id), assert (id < num_format_lines);
-            logger.log(defines::logSim, 2, "update_current_state {}", id);
+            logger.log(defines::logSim, 3, "update_current_state {}", id);
             current_state[id].update(bv);
         }
 
@@ -635,7 +635,7 @@ namespace wamcer::sim {
                         res.bv_state = args[0].array_state->read(args[1].bv_state);
                         {
                             Btor2Line *mem = btor2parser_get_line_by_id(model, l->args[0]);
-                            logger.log(defines::logSim, 2, "read {}[{}] -> {}",
+                            logger.log(defines::logSim, 3, "read {}[{}] -> {}",
                                        mem->symbol ? mem->symbol : std::to_string(mem->id),
                                        btorsim_bv_to_string(args[1].bv_state), btorsim_bv_to_string(res.bv_state));
                         }
@@ -650,7 +650,7 @@ namespace wamcer::sim {
                                 args[0].array_state->write(args[1].bv_state, args[2].bv_state);
                         {
                             Btor2Line *mem = btor2parser_get_line_by_id(model, l->args[0]);
-                            logger.log(defines::logSim, 2, "write {}[{}] -> {}",
+                            logger.log(defines::logSim, 3, "write {}[{}] -> {}",
                                        mem->symbol ? mem->symbol : std::to_string(mem->id),
                                        btorsim_bv_to_string(args[1].bv_state), btorsim_bv_to_string(args[2].bv_state));
                         }
@@ -675,7 +675,7 @@ namespace wamcer::sim {
         }
 
         void initialize_states(int32_t randomly) {
-            logger.log(defines::logSim, 1, "initializing states at #0");
+            logger.log(defines::logSim, 3, "initializing states at #0");
 
             auto cur = TermVec();
             auto curs = std::vector<std::string>();
@@ -762,7 +762,8 @@ namespace wamcer::sim {
 
                                         curs.push_back(btorsim_bv_to_string(am->const_init));
                                         auto key = slv->make_symbol("key" + std::to_string(time(0)), key_sort);
-                                        auto value = slv->make_term((int64_t) btorsim_bv_to_uint64(am->const_init), value_sort);
+                                        auto value = slv->make_term((int64_t) btorsim_bv_to_uint64(am->const_init),
+                                                                    value_sort);
                                         auto v = slv->make_term(Select, states_slv[i], key);
                                         cur.push_back(slv->make_term(Equal, v, value));
 
@@ -806,7 +807,7 @@ namespace wamcer::sim {
         }
 
         void initialize_inputs(int64_t k, int32_t randomize) {
-            logger.log(defines::logSim, 1, "initializing inputs at @{}", k);
+            logger.log(defines::logSim, 3, "initializing inputs at @{}", k);
 //        if (print_trace) printf("@%"
 //        PRId64
 //        "\n", k);
@@ -844,7 +845,7 @@ namespace wamcer::sim {
         }
 
         void simulate_step(int64_t k, int32_t randomize_states_that_are_inputs) {
-            logger.log(defines::logSim, 1, "simulating step {}", k);
+            logger.log(defines::logSim, 2, "simulating step {}", k);
             for (int64_t i = 0; i < num_format_lines; i++) {
                 Btor2Line *l = btor2parser_get_line_by_id(model, i);
                 if (!l) continue;
@@ -896,7 +897,7 @@ namespace wamcer::sim {
         }
 
         void transition(int64_t k) {
-            logger.log(defines::logSim, 1, "transition {}", k);
+            logger.log(defines::logSim, 3, "transition {}", k);
             for (int64_t i = 0; i < num_format_lines; i++) delete_current_state(i);
             auto cur = TermVec();
             auto curs = std::vector<std::string>();
@@ -972,7 +973,7 @@ namespace wamcer::sim {
         }
 
         void random_simulation(int64_t k) {
-            logger.log(defines::logSim, 1, "starting random simulation up to bound {}", k);
+            logger.log(defines::logSim, 3, "starting random simulation up to bound {}", k);
             assert (k >= 0);
 
             const int32_t randomize = 1;

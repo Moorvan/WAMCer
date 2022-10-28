@@ -38,7 +38,7 @@ namespace wamcer {
                 cvRef.wait(lck);
             }
             if (stepN(i)) {
-                logger.log(defines::logKind, 1, "Proved: property is {}-inductive-invariant.", i);
+                logger.log(defines::logKind, 0, "Proved: property is {}-inductive-invariant.", i);
                 return true;
             } else {
                 logger.log(defines::logKind, 1, "{}-inductive check: Failed.", i);

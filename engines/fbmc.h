@@ -8,6 +8,7 @@
 #include "core/unroller.h"
 #include "utils/logger.h"
 #include "utils/defines.h"
+#include "async/asyncTermSet.h"
 #include <mutex>
 #include <condition_variable>
 
@@ -33,7 +34,7 @@ namespace wamcer {
         /// 0: k = 0 \n
         /// 1: k = 1 \n
         /// 2: k = 2 \n
-        FBMC(TransitionSystem &ts, Term &property, UnorderedTermSet &predicates, int &safeStep, std::mutex &mux,
+        FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep, std::mutex &mux,
              std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel = 0, int complexPredsLevel = 1);
 
         bool run(int bound = -1);
@@ -50,7 +51,7 @@ namespace wamcer {
         std::mutex &mux;
         std::condition_variable &cv;
         UnorderedTermSet basePreds;
-        UnorderedTermSet &preds;
+        AsyncTermSet &preds;
 
         int termRelationLevel;
         int complexPredsLevel;
