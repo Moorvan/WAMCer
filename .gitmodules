@@ -1,3 +1,6 @@
 [submodule "smt-switch"]
 	path = smt-switch
 	url = https://github.com/Moorvan/smt-switch.git
+[submodule "deps/btor2tools"]
+	path = deps/btor2tools
+	url = https://github.com/Moorvan/btor2tools.git
