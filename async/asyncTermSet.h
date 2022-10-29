@@ -14,9 +14,7 @@ namespace wamcer {
     public:
         AsyncTermSet();
 
-//        ~AsyncTermSet() {
-//            delete data;
-//        }
+        ~AsyncTermSet();
 
         void insert(smt::Term term);
 

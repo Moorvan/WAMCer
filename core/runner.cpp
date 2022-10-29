@@ -141,7 +141,7 @@ namespace wamcer {
             cv.wait(lck);
         }
         logger.log(defines::logFBMCKindRunner, 1, "Predicates: {}.", preds.size());
-        bmcRun.detach();
+//        bmcRun.detach();
         if (simFilterStep > 0) {
             auto simFilterRun = std::thread([&] {
                 auto simFilter = FilterWithSimulation(path, simFilterStep);
@@ -181,12 +181,15 @@ namespace wamcer {
                         finish.notify_all();
                     }
                 }, std::move(signalExitFuture));
-                while (preds.size() == curCnt) {
+                while (preds.size() == curCnt && !isFinished) {
                     auto lck = std::unique_lock(mux);
                     cv.wait(lck);
                 }
-                kind0Run.detach();
                 signalExit.set_value();
+                kind0Run.join();
+                if (isFinished) {
+                    return;
+                }
             }
         });
         {
@@ -196,7 +199,8 @@ namespace wamcer {
         isFinished = true;
         bmcExit.set_value();
         wakeup.detach();
-        kind.detach();
+        kind.join();
+        bmcRun.join();
 //        std::this_thread::sleep_for(std::chrono::seconds(1));
         if (res) {
             logger.log(defines::logFBMCKindRunner, 0, "Result: safe.");

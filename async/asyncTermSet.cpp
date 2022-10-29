@@ -10,6 +10,10 @@ namespace wamcer {
         data = new smt::UnorderedTermSet();
     }
 
+    AsyncTermSet::~AsyncTermSet() {
+        delete data;
+    }
+
     void AsyncTermSet::insert(smt::Term term) {
         auto lck = std::unique_lock(mux);
         data->insert(term);
@@ -51,6 +55,8 @@ namespace wamcer {
         auto lck = std::shared_lock(mux);
         return data->size();
     }
+
+
 
 
 }
