@@ -118,12 +118,14 @@ namespace wamcer {
         auto toPred = TermTranslator(toPredSolver);
 
         auto preds = AsyncTermSet();
+        auto bmcExit = std::promise<void>();
+        auto bmcExitFuture = bmcExit.get_future();
 
         auto bmcRun = std::thread([&] {
             auto bmcTs = TransitionSystem(bmcSlv);
             auto bmcP = Term();
             decoder(path, bmcTs, bmcP);
-            auto fbmc = FBMC(bmcTs, bmcP, preds, safe, mux, cv, toPred, termRelationLevel, complexPredsLevel);
+            auto fbmc = FBMC(bmcTs, bmcP, preds, safe, mux, cv, toPred, termRelationLevel, complexPredsLevel, std::move(bmcExitFuture));
             auto fbmcRes = fbmc.run(bound);
             finish.notify_all();
             if (fbmcRes) {
@@ -192,6 +194,7 @@ namespace wamcer {
             finish.wait(lck);
         }
         isFinished = true;
+        bmcExit.set_value();
         wakeup.detach();
         kind.detach();
         if (res) {

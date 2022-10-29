@@ -11,6 +11,7 @@
 #include "async/asyncTermSet.h"
 #include <mutex>
 #include <condition_variable>
+#include <future>
 
 using namespace smt;
 
@@ -35,7 +36,7 @@ namespace wamcer {
         /// 1: k = 1 \n
         /// 2: k = 2 \n
         FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep, std::mutex &mux,
-             std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel = 0, int complexPredsLevel = 1);
+             std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel = 0, int complexPredsLevel = 1, std::future<void> exitSignal = std::future<void>());
 
         bool run(int bound = -1);
 
@@ -52,6 +53,8 @@ namespace wamcer {
         std::condition_variable &cv;
         UnorderedTermSet basePreds;
         AsyncTermSet &preds;
+        std::future<void> exitSignal;
+        bool exited;
 
         int termRelationLevel;
         int complexPredsLevel;

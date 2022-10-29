@@ -8,7 +8,8 @@
 namespace wamcer {
 
     FBMC::FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep, std::mutex &mux,
-               std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel, int complexPredsLevel) :
+               std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel, int complexPredsLevel,
+               std::future<void> exitSignal) :
             preds(predicates),
             mux(mux),
             cv(cv),
@@ -20,7 +21,9 @@ namespace wamcer {
             to_preds(to_preds),
             to_solver(solver),
             termRelationLevel(termRelationLevel),
-            complexPredsLevel(complexPredsLevel) {}
+            complexPredsLevel(complexPredsLevel),
+            exitSignal(std::move(exitSignal)),
+            exited(false) {}
 
     bool FBMC::run(int bound) {
         logger.log(defines::logFBMC, 1, "init: {}", transitionSystem.init());
@@ -58,6 +61,10 @@ namespace wamcer {
             } else {
                 logger.log(defines::logFBMC, 0, "Check safe at {} step.", i);
                 safeStep = i;
+            }
+            if (exited) {
+                logger.log(defines::logFBMC, 0, "Safe in {} steps.", bound);
+                return true;
             }
         }
         logger.log(defines::logFBMC, 0, "Safe in {} steps.", bound);
@@ -130,6 +137,10 @@ namespace wamcer {
             return false;
         } else {
             logger.log(defines::logFBMC, 2, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
+            if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+                exited = true;
+                return true;
+            }
             filterPredsAt(n);
             return true;
         }
@@ -143,21 +154,6 @@ namespace wamcer {
             return solver->check_sat_assuming({not_t}).is_sat();
 
         });
-//        auto notPass = TermVec();
-//            for (auto v: preds) {
-//                auto slv_v = to_solver.transfer_term(v);
-//                auto v_at_step = unroller.at_time(slv_v, step);
-//                auto not_v = solver->make_term(Not, v_at_step);
-//                auto res = solver->check_sat_assuming({not_v});
-//                if (res.is_sat()) {
-//                    notPass.push_back(v);
-//                }
-//            }
-//
-//            for (auto v: notPass) {
-//                preds.erase(v);
-//            }
-//        }
     }
 
     void FBMC::constructTermsRelation() {
