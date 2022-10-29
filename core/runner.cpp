@@ -114,18 +114,24 @@ namespace wamcer {
         auto isFinished = false;
 
         auto bmcSlv = solverFactory();
-        auto toPredSolver = solverFactory();
-        auto toPred = TermTranslator(toPredSolver);
+        auto predSolver = solverFactory();
 
         auto preds = AsyncTermSet();
         auto bmcExit = std::promise<void>();
         auto bmcExitFuture = bmcExit.get_future();
 
+
+        auto bmcTs = TransitionSystem(bmcSlv);
+        auto bmcP = Term();
+        decoder(path, bmcTs, bmcP);
+
+        // preds gen
+        auto predsGen = DirectConstructor(bmcTs, bmcP, preds, predSolver);
+        predsGen.generatePreds(termRelationLevel, complexPredsLevel);
+
+        // bmc prove & preds filter1
         auto bmcRun = std::thread([&] {
-            auto bmcTs = TransitionSystem(bmcSlv);
-            auto bmcP = Term();
-            decoder(path, bmcTs, bmcP);
-            auto fbmc = FBMC(bmcTs, bmcP, preds, safe, mux, cv, toPred, termRelationLevel, complexPredsLevel, std::move(bmcExitFuture));
+            auto fbmc = FBMC(bmcTs, bmcP, preds, safe, std::move(bmcExitFuture));
             auto fbmcRes = fbmc.run(bound);
             finish.notify_all();
             if (fbmcRes) {
@@ -136,12 +142,9 @@ namespace wamcer {
                 finish.notify_all();
             }
         });
-        {
-            auto lck = std::unique_lock(mux);
-            cv.wait(lck);
-        }
         logger.log(defines::logFBMCKindRunner, 1, "Predicates: {}.", preds.size());
-//        bmcRun.detach();
+
+        // preds filter2
         if (simFilterStep > 0) {
             auto simFilterRun = std::thread([&] {
                 auto simFilter = FilterWithSimulation(path, simFilterStep);
@@ -156,6 +159,7 @@ namespace wamcer {
             timer::wakeEvery(config::wakeKindCycle, cv, isFinished);
         });
 
+        // prove
         auto kind = std::thread([&] {
             int curCnt;
             while (true) {

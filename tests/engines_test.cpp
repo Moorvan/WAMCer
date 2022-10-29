@@ -8,6 +8,7 @@
 #include <engines/k_induction.h>
 #include "engines/pdr.h"
 #include "engines/fbmc.h"
+#include "engines/DirectConstructor.h"
 #include "smt-switch/boolector_factory.h"
 #include "smt-switch/bitwuzla_factory.h"
 #include <thread>
@@ -149,11 +150,11 @@ TEST(FBMCTests, FBMCWithKind) {
     auto preds = AsyncTermSet();
     auto pred_s = SolverFactory::cvc5Solver();
 
+    auto gen = DirectConstructor(ts, p, preds, pred_s);
+    gen.generatePreds();
+
     auto safeStep = int();
-    auto mux = std::mutex();
-    auto cv = std::condition_variable();
-    auto to_pred = TermTranslator(pred_s);
-    auto fbmc = FBMC(ts, p, preds, safeStep, mux, cv, to_pred, 0, 1);
+    auto fbmc = FBMC(ts, p, preds, safeStep);
     fbmc.run(13);
     logger.log(1, "has {} preds.", preds.size());
     logger.log(1, "safe step is {}", safeStep);

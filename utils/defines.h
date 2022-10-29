@@ -7,6 +7,7 @@
 
 namespace defines {
     // log prefixes
+    const auto logDirectConstructor = "[DirectConstructor]: ";
     const auto logSim = "[BtorSim]: ";
     const auto logBMC = "[BMC]: ";
     const auto logKind = "[K-Induction]: ";

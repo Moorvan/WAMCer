@@ -7,21 +7,15 @@
 
 namespace wamcer {
 
-    FBMC::FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep, std::mutex &mux,
-               std::condition_variable &cv, TermTranslator &to_preds, int termRelationLevel, int complexPredsLevel,
+    FBMC::FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep,
                std::future<void> exitSignal) :
             preds(predicates),
-            mux(mux),
-            cv(cv),
             safeStep(safeStep),
             transitionSystem(ts),
             property(property),
             solver(ts.solver()),
             unroller(ts),
-            to_preds(to_preds),
             to_solver(solver),
-            termRelationLevel(termRelationLevel),
-            complexPredsLevel(complexPredsLevel),
             exitSignal(std::move(exitSignal)),
             exited(false) {}
 
@@ -30,17 +24,7 @@ namespace wamcer {
         logger.log(defines::logFBMC, 2, "trans: {}", transitionSystem.trans());
         logger.log(defines::logFBMC, 1, "prop: {}", property);
 
-        collectStructuralPredicates();
-        constructTermsRelation();
-        constructComplexPreds();
-
-        logger.log(defines::logFBMC, 2, "{} preds: ", preds.size());
-        preds.map([](Term t) {
-            logger.log(defines::logFBMC, 3, "{}", t);
-        });
-
         logger.log(defines::logFBMC, 2, "The initialization has {} preds.", preds.size());
-        cv.notify_all();
 
         if (!step0()) {
             logger.log(defines::logFBMC, 0, "Check failed at init step.");
@@ -69,44 +53,6 @@ namespace wamcer {
         }
         logger.log(defines::logFBMC, 0, "Safe in {} steps.", bound);
         return true;
-    }
-
-    void FBMC::collectStructuralPredicates() {
-        auto bv1 = transitionSystem.make_sort(BV, 1);
-        auto bool_ = transitionSystem.make_sort(BOOL);
-
-        for (auto v: transitionSystem.statevars()) {
-            if (v->get_sort() == bv1 or v->get_sort() == bool_) {
-                addToBasePreds({v});
-            }
-        }
-
-        std::function<void(Term)> dfs = [&](Term t) {
-            auto hasOnlyCurSymbol = true;
-            for (auto v: t) {
-                if (v->get_op() != Op()) {
-                    hasOnlyCurSymbol = false;
-                    dfs(v);
-                } else if (transitionSystem.is_next_var(v)) {
-                    hasOnlyCurSymbol = false;
-                }
-            }
-            if (hasOnlyCurSymbol) {
-                if (t->get_sort() == bv1 or t->get_sort() == bool_) {
-                    basePreds.insert(t);
-                }
-            }
-        };
-
-        dfs(transitionSystem.init());
-        dfs(transitionSystem.trans());
-        dfs(property);
-
-        logger.log(defines::logFBMC, 2, "base preds: ");
-        for (auto v: basePreds) {
-            logger.log(defines::logFBMC, 2, "{}", v);
-        }
-
     }
 
 
@@ -152,123 +98,7 @@ namespace wamcer {
             auto t_at_step = unroller.at_time(slv_t, step);
             auto not_t = solver->make_term(Not, t_at_step);
             return solver->check_sat_assuming({not_t}).is_sat();
-
         });
     }
 
-    void FBMC::constructTermsRelation() {
-        auto sortTerms = collectTerms();
-
-        logger.log(defines::logFBMC, 3, "add new term relations...");
-        for (auto kvs: sortTerms) {
-            for (auto v1: kvs.second) {
-                for (auto v2: kvs.second) {
-                    if (v1 != v2) {
-                        auto v1EqV2 = solver->make_term(Equal, v1, v2);
-                        if (termRelationLevel == 1) {
-                            auto v1UltV2 = solver->make_term(BVUlt, v1, v2);
-                            auto v1SltV2 = solver->make_term(BVSlt, v1, v2);
-                            addToBasePreds({v1EqV2, v1UltV2, v1SltV2});
-                        } else {
-//                            logger.log(defines::logFBMC, 2, "{}", v1EqV2);
-                            addToBasePreds({v1EqV2});
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    SortTermSetMap FBMC::collectTerms() {
-        logger.log(defines::logFBMC, 2, "collect terms...");
-
-        auto sortTerms = SortTermSetMap();
-        auto arrs = UnorderedTermSet();
-        auto bv1 = transitionSystem.make_sort(BV, 1);
-
-        std::function<void(Term)> dfs = [&](Term t) {
-//            if (t->get_op() == Op() || t->get_op() == Select) {
-            if (t->get_op() == Op()) {
-                auto sort = t->get_sort();
-                if (sort != bv1 && sort->get_sort_kind() == BV && transitionSystem.only_curr(t) && !t->is_value()) {
-                    sortTerms[sort].insert(t);
-                }
-                if (t->get_sort()->get_sort_kind() == ARRAY && transitionSystem.only_curr(t)) {
-                    arrs.insert(t);
-                }
-            } else {
-                for (auto v: t) {
-                    dfs(v);
-                }
-            }
-        };
-
-        dfs(transitionSystem.trans());
-        dfs(transitionSystem.init());
-        dfs(property);
-
-        auto arrSortTerms = SortTermSetMap();
-        for (auto arr: arrs) {
-            auto idxSort = arr->get_sort()->get_indexsort();
-            auto elemSort = arr->get_sort()->get_elemsort();
-            for (auto idx: sortTerms[idxSort]) {
-                auto term = solver->make_term(Select, arr, idx);
-                arrSortTerms[elemSort].insert(term);
-            }
-        }
-
-        for (auto kvs: arrSortTerms) {
-            auto sort = kvs.first;
-            for (auto v: kvs.second) {
-                sortTerms[sort].insert(v);
-            }
-        }
-
-        auto cnt = 0;
-        logger.log(defines::logFBMC, 2, "collect terms: ");
-        for (auto kvs: sortTerms) {
-            logger.log(defines::logFBMC, 2, "   sort: {}", kvs.first);
-            for (auto v: kvs.second) {
-                logger.log(defines::logFBMC, 2, "       term: {}", v);
-                cnt++;
-            }
-        }
-        logger.log(defines::logFBMC, 2, "collect {} terms.", cnt);
-        return sortTerms;
-    }
-
-    void FBMC::constructComplexPreds() {
-        auto lck = std::unique_lock(mux);
-        for (auto t: basePreds) {
-            preds.insert(to_preds.transfer_term(t));
-        }
-
-        if (complexPredsLevel >= 1) {
-            for (auto t1: basePreds) {
-                for (auto t2: basePreds) {
-                    auto pred = solver->make_term(Implies, t1, t2);
-                    preds.insert(to_preds.transfer_term(pred));
-                }
-            }
-        }
-
-        if (complexPredsLevel >= 2) {
-            for (auto t1: basePreds) {
-                for (auto t2: basePreds) {
-                    for (auto r: basePreds) {
-                        auto t1AndT2 = solver->make_term(BVAnd, t1, t2);
-                        auto pred = solver->make_term(Implies, t1AndT2, r);
-                        preds.insert(to_preds.transfer_term(pred));
-                    }
-                }
-            }
-        }
-    }
-
-    void FBMC::addToBasePreds(TermVec terms) {
-        for (auto t: terms) {
-            basePreds.insert(t);
-            basePreds.insert(solver->make_term(Not, t));
-        }
-    }
 }
