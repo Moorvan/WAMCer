@@ -63,7 +63,7 @@ namespace wamcer {
                 safeStep = i;
             }
             if (exited) {
-                logger.log(defines::logFBMC, 0, "Safe in {} steps.", bound);
+                logger.log(defines::logFBMC, 0, "Safe in {} steps.", i);
                 return true;
             }
         }

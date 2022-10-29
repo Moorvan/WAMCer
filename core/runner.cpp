@@ -197,6 +197,7 @@ namespace wamcer {
         bmcExit.set_value();
         wakeup.detach();
         kind.detach();
+//        std::this_thread::sleep_for(std::chrono::seconds(1));
         if (res) {
             logger.log(defines::logFBMCKindRunner, 0, "Result: safe.");
             return true;
@@ -205,5 +206,4 @@ namespace wamcer {
             return false;
         }
     }
-
 }
