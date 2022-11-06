@@ -10,6 +10,7 @@
 #include "frontends/btorSim.h"
 #include "frontends/btor2_encoder.h"
 #include "core/solverFactory.h"
+#include "async/asyncPreds.h"
 
 using namespace wamcer;
 
@@ -89,5 +90,38 @@ TEST(Btor, BtorSim) {
     for (auto &t: terms) {
         logger.log(0, "{}", t);
     }
+}
+
+TEST(AsyncTests, AsyncTermSet) {
+    auto slv = SolverFactory::boolectorSolver();
+    auto set = AsyncTermSet();
+    auto x = slv->make_symbol("x", slv->make_sort(BV, 8));
+    auto a = slv->make_symbol("a", slv->make_sort(BOOL));
+    auto bv1 = slv->make_sort(BV, 1);
+    logger.log(0, "a.sort: {}", a->get_sort());
+    set.insert(x);
+    set.insert(a);
+    set.filter([&](auto t) -> bool {
+        return t->get_sort() == bv1;
+    });
+    set.map([&](auto t) {
+        logger.log(0, "{}", t);
+    });
+}
+
+TEST(AsyncTests, AsyncPreds) {
+    auto slv = SolverFactory::boolectorSolver();
+    auto predSlv = SolverFactory::boolectorSolver();
+    auto term = slv->make_symbol("x", slv->make_sort(BV, 8));
+    auto a = AsyncPreds(predSlv);
+    a.insert(term);
+    a.insert({term}, 2);
+    logger.log(0, "a.size() = {}", a.size());
+    a.map([&](auto t) {
+        logger.log(0, "{}", t);
+    }, 0);
+    a.map([&](auto t) {
+        logger.log(0, "{}", t);
+    }, 2);
 }
 

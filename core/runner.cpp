@@ -197,6 +197,7 @@ namespace wamcer {
             }
         });
         {
+            // wait for finish. There is maybe a bug here. If finished before wait, it will wait forever.
             auto lck = std::unique_lock(mux);
             finish.wait(lck);
         }

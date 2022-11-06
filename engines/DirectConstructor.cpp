@@ -5,7 +5,7 @@
 #include "DirectConstructor.h"
 
 namespace wamcer {
-    DirectConstructor::DirectConstructor(TransitionSystem &ts, Term &property, AsyncTermSet &preds, const SmtSolver& predSolver)
+    DirectConstructor::DirectConstructor(TransitionSystem &ts, Term &property, AsyncTermSet &preds, const SmtSolver predSolver)
             : transitionSystem(ts), property(property), preds(preds), solver(ts.solver()), to_preds(predSolver) {}
 
     void DirectConstructor::generatePreds(int termRelationLvl, int complexPredsLvl) {
@@ -78,10 +78,13 @@ namespace wamcer {
     }
 
     void DirectConstructor::constructComplexPreds() {
+
+        // p
         for (auto t: basePreds) {
             preds.insert(to_preds.transfer_term(t));
         }
 
+        // t1 /\ t2 -> t0
         if (complexPredsLevel >= 1) {
             for (auto t1: basePreds) {
                 for (auto t2: basePreds) {
@@ -91,6 +94,7 @@ namespace wamcer {
             }
         }
 
+        // t1 /\ t2 /\ t3 -> t0
         if (complexPredsLevel >= 2) {
             for (auto t1: basePreds) {
                 for (auto t2: basePreds) {
