@@ -9,6 +9,8 @@
 #include "engines/pdr.h"
 #include "engines/fbmc.h"
 #include "engines/DirectConstructor.h"
+#include "engines/BMCChecker.h"
+#include "engines/InductionProver.h"
 #include "smt-switch/boolector_factory.h"
 #include "smt-switch/bitwuzla_factory.h"
 #include <thread>
@@ -186,3 +188,75 @@ TEST(FBMCTests, FBMCWithKind) {
     kind.run(10);
 }
 
+
+TEST(PredsCP, bmc) {
+    logger.set_verbosity(2);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    auto p = BTOR2Encoder(path, ts).propvec().at(0);
+    auto bmc = BMCChecker(ts);
+    auto slv = SolverFactory::boolectorSolver();
+    auto to_slv = TermTranslator(slv);
+    if (bmc.check(3, to_slv.transfer_term(p))) {
+        logger.log(0, "bmc pass.");
+    } else {
+        logger.log(0, "bmc unpass.");
+    }
+
+    if (bmc.check(25, to_slv.transfer_term(p))) {
+        logger.log(0, "bmc pass.");
+    } else {
+        logger.log(0, "bmc unpass.");
+    }
+
+    if (bmc.check(20, to_slv.transfer_term(s->make_term(Not, p)))) {
+        logger.log(0, "bmc pass.");
+    } else {
+        logger.log(0, "bmc unpass.");
+    }
+}
+
+TEST(PredsCP, kind) {
+    logger.set_verbosity(2);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    auto p = BTOR2Encoder(path, ts).propvec().at(0);
+    auto ind = InductionProver(ts, p);
+    auto slv = SolverFactory::boolectorSolver();
+    auto to_slv = TermTranslator(slv);
+    if (ind.prove(25, to_slv.transfer_term(p))) {
+        logger.log(0, "ind pass.");
+    } else {
+        logger.log(0, "ind unpass.");
+    }
+
+    if (ind.prove(3, to_slv.transfer_term(p))) {
+        logger.log(0, "ind pass.");
+    } else {
+        logger.log(0, "ind unpass.");
+    }
+
+    if (ind.prove(10, to_slv.transfer_term(s->make_term(Not, p)))) {
+        logger.log(0, "ind pass.");
+    } else {
+        logger.log(0, "ind unpass.");
+    }
+
+    if (ind.prove(103, to_slv.transfer_term(p))) {
+        logger.log(0, "ind pass.");
+    } else {
+        logger.log(0, "ind unpass.");
+    }
+
+    if (ind.prove(10, slv->make_term(false))) {
+        logger.log(0, "ind pass.");
+    } else {
+        logger.log(0, "ind unpass.");
+    }
+}
+
+TEST(PredsCP, parallel) {
+
+}

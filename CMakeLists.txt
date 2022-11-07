@@ -26,7 +26,10 @@ add_library(WAMCer-lib
         deps/btor2tools/src/btorsim/btorsimhelpers.cpp
         async/asyncTermSet.cpp
         engines/DirectConstructor.cpp
-        async/asyncPreds.cpp)
+        async/asyncPreds.cpp
+        engines/BMCChecker.cpp
+        engines/InductionProver.cpp
+        )
 
 
 # link smt-switch and gmp, or boost
@@ -44,7 +47,7 @@ target_link_libraries(WAMCer-lib PUBLIC
         ${SMT_SWITCH_DIR}/local/lib/libsmt-switch.a
         ${PROJECT_SOURCE_DIR}/deps/btor2tools/build/lib/libbtor2parser.a
         pthread
-#        ${Boost_LIBRARIES}
+        #        ${Boost_LIBRARIES}
         ${GMPXX_LIBRARIES}
         ${GMP_LIBRARIES})
 

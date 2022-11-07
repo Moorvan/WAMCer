@@ -31,6 +31,10 @@ namespace wamcer {
         static bool runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
                                           std::function<smt::SmtSolver()>, int bound = -1, int termRelationLevel = 0,
                                           int complexPredsLevel = 1, int simFilterStep = 0);
+
+        static bool
+        runPredCP(const std::string& path, const std::function<void(std::string &, TransitionSystem &)>& decoder, const std::function<smt::SmtSolver()>&,
+                  int bound = -1);
     };
 }
 

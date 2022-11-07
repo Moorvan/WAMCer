@@ -212,4 +212,10 @@ namespace wamcer {
             return false;
         }
     }
+
+    bool Runner::runPredCP(const std::string& path, const std::function<void(std::string &, TransitionSystem &)>& decode,
+                           const std::function<smt::SmtSolver()>&, int bound) {
+
+        return false;
+    }
 }
