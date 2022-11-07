@@ -116,7 +116,7 @@ namespace wamcer {
         auto bmcSlv = solverFactory();
         auto predSolver = solverFactory();
 
-        auto preds = AsyncTermSet();
+        auto preds = new AsyncTermSet();
         auto bmcExit = std::promise<void>();
         auto bmcExitFuture = bmcExit.get_future();
 
@@ -125,12 +125,12 @@ namespace wamcer {
         decoder(path, bmcTs, bmcP);
 
         // preds gen
-        auto predsGen = new DirectConstructor(bmcTs, bmcP, preds, predSolver);
+        auto predsGen = new DirectConstructor(bmcTs, bmcP, *preds, predSolver);
         predsGen->generatePreds(termRelationLevel, complexPredsLevel);
 
         // bmc prove & preds filter1
         auto bmcRun = std::thread([&] {
-            auto fbmc = FBMC(bmcTs, bmcP, preds, safe, std::move(bmcExitFuture));
+            auto fbmc = FBMC(bmcTs, bmcP, *preds, safe, std::move(bmcExitFuture));
             auto fbmcRes = fbmc.run(bound);
             finish.notify_all();
             if (fbmcRes) {
@@ -141,13 +141,14 @@ namespace wamcer {
                 finish.notify_all();
             }
         });
-        logger.log(defines::logFBMCKindRunner, 1, "Predicates: {}.", preds.size());
+        bmcRun.detach();
+        logger.log(defines::logFBMCKindRunner, 1, "Predicates: {}.", preds->size());
 
         // preds filter2
         if (simFilterStep > 0) {
             auto simFilterRun = std::thread([&] {
                 auto simFilter = FilterWithSimulation(path, simFilterStep);
-                preds.filter([&](Term t) -> bool {
+                preds->filter([&](Term t) -> bool {
                     return not simFilter.checkSat(t);
                 });
             });
@@ -162,7 +163,7 @@ namespace wamcer {
         auto kind = std::thread([&] {
             int curCnt;
             while (true) {
-                curCnt = preds.size();
+                curCnt = preds->size();
                 logger.log(defines::logFBMCKindRunner, 1, "run k induction with {} predicates", curCnt);
                 auto signalExit = std::promise<void>();
                 auto signalExitFuture = signalExit.get_future();
@@ -172,8 +173,8 @@ namespace wamcer {
                     auto to_ts = TermTranslator(kind_slv);
                     auto p = Term();
                     decoder(path, ts, p);
-                    std::cout << preds.size() << std::endl;
-                    p = preds.reduce([&](Term a, Term b) -> Term {
+                    std::cout << preds->size() << std::endl;
+                    p = preds->reduce([&](Term a, Term b) -> Term {
                         return kind_slv->make_term(And, a, to_ts.transfer_term(b));
                     }, p);
                     auto kind = KInduction(ts, p, safe, mux, cv, std::move(signalExitFuture));
@@ -184,7 +185,7 @@ namespace wamcer {
                         finish.notify_all();
                     }
                 }, std::move(signalExitFuture));
-                while (preds.size() == curCnt && !isFinished) {
+                while (preds->size() == curCnt && !isFinished) {
                     auto lck = std::unique_lock(mux);
                     cv.wait(lck);
                 }
@@ -201,10 +202,8 @@ namespace wamcer {
             finish.wait(lck);
         }
         isFinished = true;
-        bmcExit.set_value();
         wakeup.detach();
         kind.join();
-        bmcRun.join();
         if (res) {
             logger.log(defines::logFBMCKindRunner, 0, "Result: safe.");
             return true;

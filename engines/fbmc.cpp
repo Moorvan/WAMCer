@@ -34,10 +34,10 @@ namespace wamcer {
         }
         safeStep = 0;
 
-        if (exited) {
-            logger.log(defines::logFBMC, 0, "Safe at init step");
-            return true;
-        }
+//        if (exited) {
+//            logger.log(defines::logFBMC, 0, "Safe at init step");
+//            return true;
+//        }
 
         if (bound == 0) {
             return true;
@@ -51,10 +51,10 @@ namespace wamcer {
                 logger.log(defines::logFBMC, 0, "Check safe at {} step.", i);
                 safeStep = i;
             }
-            if (exited) {
-                logger.log(defines::logFBMC, 0, "Safe in {} steps.", i);
-                return true;
-            }
+//            if (exited) {
+//                logger.log(defines::logFBMC, 0, "Safe in {} steps.", i);
+//                return true;
+//            }
         }
         logger.log(defines::logFBMC, 0, "Safe in {} steps.", bound);
         return true;
@@ -72,24 +72,24 @@ namespace wamcer {
             return false;
         } else {
             logger.log(defines::logFBMC, 2, "init0 /\\ bad0 is unsat.");
-            if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
-                exited = true;
-                return true;
-            }
+//            if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+//                exited = true;
+//                return true;
+//            }
             filterPredsAt(0);
-            if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
-                exited = true;
-                return true;
-            }
+//            if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+//                exited = true;
+//                return true;
+//            }
             return true;
         }
     }
 
     bool FBMC::stepN(int n) {
-        if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
-            exited = true;
-            return true;
-        }
+//        if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+//            exited = true;
+//            return true;
+//        }
         auto transNSub1 = unroller.at_time(transitionSystem.trans(), n - 1);
         solver->assert_formula(transNSub1);
         auto propN = unroller.at_time(property, n);
@@ -100,10 +100,10 @@ namespace wamcer {
             return false;
         } else {
             logger.log(defines::logFBMC, 2, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
-            if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
-                exited = true;
-                return true;
-            }
+//            if (exitSignal.valid() && exitSignal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
+//                exited = true;
+//                return true;
+//            }
             filterPredsAt(n);
             return true;
         }
