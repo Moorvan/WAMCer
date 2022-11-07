@@ -112,16 +112,29 @@ TEST(AsyncTests, AsyncTermSet) {
 TEST(AsyncTests, AsyncPreds) {
     auto slv = SolverFactory::boolectorSolver();
     auto predSlv = SolverFactory::boolectorSolver();
-    auto term = slv->make_symbol("x", slv->make_sort(BV, 8));
-    auto a = AsyncPreds(predSlv);
-    a.insert(term);
-    a.insert({term}, 2);
-    logger.log(0, "a.size() = {}", a.size());
-    a.map([&](auto t) {
+    auto to_slv = TermTranslator(slv);
+    auto bv8 = slv->make_sort(BV, 8);
+    auto term = slv->make_term(Equal, slv->make_symbol("x", bv8), slv->make_term(10, bv8));
+    auto term2 = slv->make_term(Equal, slv->make_symbol("y", bv8), slv->make_term(10, bv8));
+    auto init = slv->make_term(true);
+    auto preds = AsyncPreds(predSlv);
+    preds.insert(term);
+    preds.insert(term2);
+    preds.insert({term}, 2);
+    auto ands = preds.reduce([&](auto t0, auto t1) -> auto {
+        return slv->make_term(And, t0, to_slv.transfer_term(t1));
+    }, init, 0);
+    logger.log(0, "ands: {}", ands);
+    logger.log(0, "preds.size() = {}", preds.size());
+    preds.map([&](auto t) {
         logger.log(0, "{}", t);
     }, 0);
-    a.map([&](auto t) {
+    preds.map([&](auto t) {
         logger.log(0, "{}", t);
     }, 2);
+    auto aT = predSlv->make_term(true);
+    auto aat = to_slv.transfer_term(aT);
+    ands = slv->make_term(And, ands, aat);
+    logger.log(0, "ands: {}", ands);
 }
 

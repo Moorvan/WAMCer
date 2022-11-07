@@ -102,7 +102,7 @@ namespace wamcer {
 
 
     bool Runner::runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
-                                       smt::SmtSolver (*solverFactory)(), int bound, int termRelationLevel,
+                                       std::function<smt::SmtSolver()> solverFactory, int bound, int termRelationLevel,
                                        int complexPredsLevel, int simFilterStep) {
         logger.log(defines::logFBMCKindRunner, 0, "file: {}", path);
         logger.log(defines::logFBMCKindRunner, 0, "FBMC + K-Induction running...");
@@ -120,14 +120,13 @@ namespace wamcer {
         auto bmcExit = std::promise<void>();
         auto bmcExitFuture = bmcExit.get_future();
 
-
         auto bmcTs = TransitionSystem(bmcSlv);
         auto bmcP = Term();
         decoder(path, bmcTs, bmcP);
 
         // preds gen
-        auto predsGen = DirectConstructor(bmcTs, bmcP, preds, predSolver);
-        predsGen.generatePreds(termRelationLevel, complexPredsLevel);
+        auto predsGen = new DirectConstructor(bmcTs, bmcP, preds, predSolver);
+        predsGen->generatePreds(termRelationLevel, complexPredsLevel);
 
         // bmc prove & preds filter1
         auto bmcRun = std::thread([&] {
@@ -206,7 +205,6 @@ namespace wamcer {
         wakeup.detach();
         kind.join();
         bmcRun.join();
-//        std::this_thread::sleep_for(std::chrono::seconds(1));
         if (res) {
             logger.log(defines::logFBMCKindRunner, 0, "Result: safe.");
             return true;

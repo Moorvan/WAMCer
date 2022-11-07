@@ -13,7 +13,6 @@
 
 using namespace smt;
 
-
 namespace wamcer {
     class BMC {
     public:

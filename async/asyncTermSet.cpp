@@ -41,27 +41,27 @@ namespace wamcer {
     }
 
     void AsyncTermSet::filter(std::function<bool(smt::Term)> f) {
-//        auto erases = smt::TermVec();
-//        {
-//            auto lck = std::shared_lock(mux);
-//            for (auto term: data) {
-//                if (f(term)) {
-//                    erases.push_back(term);
-//                }
-//            }
-//        }
-//        auto lck = std::unique_lock(mux);
-//        for (auto &term: erases) {
-//            data.erase(term);
-//        }
-        auto lck = std::unique_lock(mux);
-        for (auto it = data.begin(); it != data.end();) {
-            if (f(*it)) {
-                it = data.erase(it);
-            } else {
-                ++it;
+        auto erases = smt::TermVec();
+        {
+            auto lck = std::shared_lock(mux);
+            for (auto term: data) {
+                if (f(term)) {
+                    erases.push_back(term);
+                }
             }
         }
+        auto lck = std::unique_lock(mux);
+        for (auto &term: erases) {
+            data.erase(term);
+        }
+//        auto lck = std::unique_lock(mux);
+//        for (auto it = data.begin(); it != data.end();) {
+//            if (f(*it)) {
+//                it = data.erase(it);
+//            } else {
+//                ++it;
+//            }
+//        }
     }
 
     void AsyncTermSet::map(const std::function<void(smt::Term)>& f) {

@@ -29,7 +29,7 @@ namespace wamcer {
                                          smt::SmtSolver(solverFactory)(), int bound = -1);
 
         static bool runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
-                                          smt::SmtSolver(solverFactory)(), int bound = -1, int termRelationLevel = 0,
+                                          std::function<smt::SmtSolver()>, int bound = -1, int termRelationLevel = 0,
                                           int complexPredsLevel = 1, int simFilterStep = 0);
     };
 }
