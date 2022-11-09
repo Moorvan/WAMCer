@@ -11,6 +11,7 @@
 #include "engines/DirectConstructor.h"
 #include "engines/BMCChecker.h"
 #include "engines/InductionProver.h"
+#include "engines/InvConstructor.h"
 #include "smt-switch/boolector_factory.h"
 #include "smt-switch/bitwuzla_factory.h"
 #include <thread>
@@ -42,7 +43,7 @@ TEST(BMCTests, Sync) {
     logger.log(0, "BMC running...");
     auto mux = std::mutex();
     auto cv = std::condition_variable();
-    auto step = int();
+    auto step = std::atomic<int>();
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
@@ -62,7 +63,7 @@ TEST(KInductionTests, SingleKInd) {
     logger.set_verbosity(1);
     auto path = "../../btors/counter-101.btor2";
     auto s = SolverFactory::boolectorSolver();
-    auto safeBound = defines::allStepSafe;
+    auto safeBound = std::atomic<int>(defines::allStepSafe);
     auto mux = std::mutex();
     auto cv = std::condition_variable();
     auto ts = TransitionSystem(s);
@@ -94,7 +95,7 @@ TEST(KInductionWithBMC, KindWithBMC) {
     auto ts2 = TransitionSystem(s2);
     auto p1 = BTOR2Encoder(path, ts1).propvec().at(0);
     auto p2 = BTOR2Encoder(path, ts2).propvec().at(0);
-    auto safe = int();
+    auto safe = std::atomic<int> ();
     auto mux = std::mutex();
     auto cv = std::condition_variable();
     auto finish = std::condition_variable();
@@ -155,7 +156,7 @@ TEST(FBMCTests, FBMCWithKind) {
     auto gen = DirectConstructor(ts, p, preds, pred_s);
     gen.generatePreds();
 
-    auto safeStep = int();
+    auto safeStep = std::atomic<int>();
     auto fbmc = FBMC(ts, p, preds, safeStep);
     fbmc.run(13);
     logger.log(1, "has {} preds.", preds.size());
@@ -255,6 +256,19 @@ TEST(PredsCP, kind) {
     } else {
         logger.log(0, "ind unpass.");
     }
+}
+
+TEST(InvConstruc, InvConstructor) {
+    auto inv = AsyncTermSet();
+    auto path = "../../btors/memory.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    auto p = Term();
+    BTOR2Encoder::decoder(path, ts, p);
+    auto pred_s = SolverFactory::boolectorSolver();
+    auto invGen = InvConstructor(ts, p, inv, pred_s);
+    invGen.generateInvs();
+
 }
 
 TEST(PredsCP, parallel) {

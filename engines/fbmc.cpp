@@ -7,7 +7,7 @@
 
 namespace wamcer {
 
-    FBMC::FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep,
+    FBMC::FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, std::atomic<int> &safeStep,
                std::future<void> exitSignal) :
             preds(predicates),
             safeStep(safeStep),
@@ -17,7 +17,9 @@ namespace wamcer {
             unroller(ts),
             to_solver(solver),
             exitSignal(std::move(exitSignal)),
-            exited(false) {}
+            exited(false) {
+        safeStep = defines::noStepSafe;
+    }
 
     bool FBMC::run(int bound) {
         logger.log(defines::logFBMC, 1, "init: {}", transitionSystem.init());

@@ -6,7 +6,7 @@
 
 
 namespace wamcer {
-    KInduction::KInduction(TransitionSystem &ts, Term &p, int &safeBound, std::mutex &mux,
+    KInduction::KInduction(TransitionSystem &ts, Term &p, std::atomic<int> &safeBound, std::mutex &mux,
                            std::condition_variable &cv, std::future<void> exit_signal)
             : transitionSystem(ts),
               solver(ts.solver()),
@@ -38,7 +38,7 @@ namespace wamcer {
                 cvRef.wait(lck);
             }
             if (stepN(i)) {
-                logger.log(defines::logKind, 0, "Proved: property is {}-inductive-invariant.", i);
+                logger.log(defines::logKind, 0, "Proved: p is {}-inductive-invariant.", i);
                 return true;
             } else {
                 logger.log(defines::logKind, 1, "{}-inductive check: Failed.", i);

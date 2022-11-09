@@ -29,7 +29,7 @@ namespace wamcer {
                                       smt::SmtSolver (*solverFactory)(), int bound) {
         logger.log(defines::logBMCKindRunner, 0, "file: {}", path);
         logger.log(defines::logBMCKindRunner, 0, "BMC + K-Induction running...");
-        auto safe = int();
+        auto safe = std::atomic<int>();
         auto mux = std::mutex();
         auto cv = std::condition_variable();
         auto finish = std::condition_variable();
@@ -100,13 +100,16 @@ namespace wamcer {
     }
 
 
-
-    bool Runner::runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
-                                       std::function<smt::SmtSolver()> solverFactory, int bound, int termRelationLevel,
-                                       int complexPredsLevel, int simFilterStep) {
+    bool Runner::runFBMCWithKInduction(std::string path,
+                                       const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                                       std::function<smt::SmtSolver()> solverFactory,
+                                       int bound,
+                                       int termRelationLevel,
+                                       int complexPredsLevel,
+                                       int simFilterStep) {
         logger.log(defines::logFBMCKindRunner, 0, "file: {}", path);
         logger.log(defines::logFBMCKindRunner, 0, "FBMC + K-Induction running...");
-        auto safe = int();
+        auto safe = std::atomic<int>(0);
         auto mux = std::mutex();
         auto cv = std::condition_variable();
         auto finish = std::condition_variable();
@@ -141,10 +144,10 @@ namespace wamcer {
                 finish.notify_all();
             }
         });
-        bmcRun.detach();
         logger.log(defines::logFBMCKindRunner, 1, "Predicates: {}.", preds->size());
 
-        // preds filter2
+        bmcRun.detach();
+//         preds filter2
         if (simFilterStep > 0) {
             auto simFilterRun = std::thread([&] {
                 auto simFilter = FilterWithSimulation(path, simFilterStep);
@@ -173,14 +176,24 @@ namespace wamcer {
                     auto to_ts = TermTranslator(kind_slv);
                     auto p = Term();
                     decoder(path, ts, p);
+                    logger.log(defines::logKind, 0, "inv: {}", p);
                     std::cout << preds->size() << std::endl;
-                    p = preds->reduce([&](Term a, Term b) -> Term {
-                        return kind_slv->make_term(And, a, to_ts.transfer_term(b));
-                    }, p);
+                    if (safe >= 0) {
+                        p = preds->reduce([&](Term a, Term b) -> Term {
+                            return kind_slv->make_term(And, a, to_ts.transfer_term(b));
+                        }, p);
+                    }
                     auto kind = KInduction(ts, p, safe, mux, cv, std::move(signalExitFuture));
                     auto kindRes = kind.run();
-                    if (kindRes) {
+                    if (kindRes && preds->size() == curCnt) {
                         logger.log(defines::logKind, 0, "Result: safe. with {} predicates: ", curCnt);
+//                        if (checkInv(path, decoder, p, safe + 1)) {
+//                            logger.log(defines::logKind, 0, "Induction check: True.");
+//                            logger.log(defines::logKind, 0, "inv: {}", p);
+//                        } else {
+//                            logger.log(defines::logKind, 0, "Something wrong.");
+//                            exit(1);
+//                        }
                         res = true;
                         finish.notify_all();
                     }
@@ -202,8 +215,8 @@ namespace wamcer {
             finish.wait(lck);
         }
         isFinished = true;
+        kind.detach();
         wakeup.detach();
-        kind.join();
         if (res) {
             logger.log(defines::logFBMCKindRunner, 0, "Result: safe.");
             return true;
@@ -213,9 +226,23 @@ namespace wamcer {
         }
     }
 
-    bool Runner::runPredCP(const std::string& path, const std::function<void(std::string &, TransitionSystem &)>& decode,
-                           const std::function<smt::SmtSolver()>&, int bound) {
+    bool
+    Runner::runPredCP(const std::string &path, const std::function<void(std::string &, TransitionSystem &)> &decode,
+                      const std::function<smt::SmtSolver()> &, int bound) {
 
         return false;
     }
+
+    bool Runner::checkInv(std::string path,
+                          const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                          Term inv,
+                          int bound) {
+        auto s = SolverFactory::boolectorSolver();
+        auto ts = TransitionSystem(s);
+        auto p = Term();
+        decoder(path, ts, p);
+        auto prover = InductionProver(ts, p);
+        return prover.prove(bound, inv);
+    }
+
 }

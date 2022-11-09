@@ -5,7 +5,7 @@
 #include "DirectConstructor.h"
 
 namespace wamcer {
-    DirectConstructor::DirectConstructor(TransitionSystem &ts, Term &property, AsyncTermSet &preds, const SmtSolver predSolver)
+    DirectConstructor::DirectConstructor(TransitionSystem &ts, Term &property, AsyncTermSet &preds, const SmtSolver& predSolver)
             : transitionSystem(ts), property(property), preds(preds), solver(ts.solver()), to_preds(predSolver) {}
 
     void DirectConstructor::generatePreds(int termRelationLvl, int complexPredsLvl) {
@@ -63,11 +63,11 @@ namespace wamcer {
                 for (auto v2: kvs.second) {
                     if (v1 != v2) {
                         auto v1EqV2 = solver->make_term(Equal, v1, v2);
-                        if (termRelationLevel == 1) {
+                        if (termRelationLevel == 2) {
                             auto v1UltV2 = solver->make_term(BVUlt, v1, v2);
                             auto v1SltV2 = solver->make_term(BVSlt, v1, v2);
                             addToBasePreds({v1EqV2, v1UltV2, v1SltV2});
-                        } else {
+                        } else if (termRelationLevel == 1){
 //                            logger.log(defines::logDirectConstructor, 2, "{}", v1EqV2);
                             addToBasePreds({v1EqV2});
                         }

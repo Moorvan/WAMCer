@@ -39,7 +39,7 @@ TEST(RunnerTests, runFBMCWithKInductionTrue) {
     auto path = "../../btors/memory.btor2";
     auto res = Runner::runFBMCWithKInduction(path, BTOR2Encoder::decoder, []() -> auto {
         return SolverFactory::boolectorSolver();
-    }, -1, 0, 1, 30);
-
+    }, -1, 1, 1, 30);
     ASSERT_TRUE(res);
+    logger.log(defines::logTest, 0, "res = {}", res);
 }

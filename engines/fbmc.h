@@ -21,12 +21,12 @@ namespace wamcer {
     class FBMC {
     public:
         /// \param ts transition system
-        /// \param property property to check
+        /// \param property p to check
         /// \param predicates predicates to check
         /// \param safeStep safe step reference
         /// \param mux mutex to lock predicates set
         /// \param cv condition variable to notify that predicates set initialized
-        FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, int &safeStep,
+        FBMC(TransitionSystem &ts, Term &property, AsyncTermSet &predicates, std::atomic<int> &safeStep,
              std::future<void> exitSignal = std::future<void>());
 
         bool run(int bound = -1);
@@ -38,7 +38,7 @@ namespace wamcer {
         Unroller unroller;
         TermTranslator to_solver;
 
-        int &safeStep;
+        std::atomic<int> &safeStep;
         AsyncTermSet &preds;
         std::future<void> exitSignal;
         bool exited;

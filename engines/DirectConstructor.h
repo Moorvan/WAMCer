@@ -16,7 +16,7 @@ namespace wamcer {
     // Direct constructor for preds from ts.
     class DirectConstructor {
     public:
-        DirectConstructor(TransitionSystem &ts, Term &property, AsyncTermSet &preds, const SmtSolver predSolver);
+        DirectConstructor(TransitionSystem &ts, Term &property, AsyncTermSet &preds, const SmtSolver& predSolver);
 
         /// \param termRelationLevel default 0.
         /// 0: only collect equivalence relation between terms \n

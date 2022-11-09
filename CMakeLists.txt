@@ -29,6 +29,7 @@ add_library(WAMCer-lib
         async/asyncPreds.cpp
         engines/BMCChecker.cpp
         engines/InductionProver.cpp
+        engines/InvConstructor.cpp
         )
 
 

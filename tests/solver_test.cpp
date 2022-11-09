@@ -161,7 +161,7 @@ TEST(MultiThreadTests, KInduction) {
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
-    int safe = 10;
+    auto safe = std::atomic<int>(10);
     auto mux = std::mutex();
     auto cv = std::condition_variable();
     auto kind = KInduction(ts, p, safe, mux, cv);

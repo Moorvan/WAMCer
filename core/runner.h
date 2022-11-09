@@ -17,6 +17,7 @@
 #include "utils/timer.h"
 #include "async/asyncTermSet.h"
 #include "engines/DirectConstructor.h"
+#include "engines/InductionProver.h"
 
 namespace wamcer {
     class Runner {
@@ -25,16 +26,30 @@ namespace wamcer {
                            smt::SmtSolver(solverFactory)(),
                            int bound = -1);
 
-        static bool runBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
-                                         smt::SmtSolver(solverFactory)(), int bound = -1);
+        static bool runBMCWithKInduction(std::string path,
+                                         void (*decoder)(std::string, TransitionSystem &, Term &),
+                                         smt::SmtSolver(solverFactory)(),
+                                         int bound = -1);
 
-        static bool runFBMCWithKInduction(std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
-                                          std::function<smt::SmtSolver()>, int bound = -1, int termRelationLevel = 0,
-                                          int complexPredsLevel = 1, int simFilterStep = 0);
+        static bool runFBMCWithKInduction(std::string path,
+                                          const std::function<void(std::string &, TransitionSystem &, Term&)> &decoder,
+                                          std::function<smt::SmtSolver()>,
+                                          int bound = -1,
+                                          int termRelationLevel = 0,
+                                          int complexPredsLevel = 1,
+                                          int simFilterStep = 0);
 
         static bool
-        runPredCP(const std::string& path, const std::function<void(std::string &, TransitionSystem &)>& decoder, const std::function<smt::SmtSolver()>&,
+        runPredCP(const std::string &path,
+                  const std::function<void(std::string &, TransitionSystem &)> &decoder,
+                  const std::function<smt::SmtSolver()> &,
                   int bound = -1);
+
+    private:
+        static bool checkInv(std::string path,
+                             const std::function<void(std::string &, TransitionSystem &, Term&)> &decoder,
+                             Term inv,
+                             int bound);
     };
 }
 

@@ -6,12 +6,12 @@
 
 
 namespace wamcer {
-    BMC::BMC(TransitionSystem &ts, Term &p, int &safeStep, std::mutex &mux, std::condition_variable &cv)
+    BMC::BMC(TransitionSystem &ts, Term &p, std::atomic<int> &safeStep, std::mutex &mux, std::condition_variable &cv)
             : transitionSystem(ts),
               property(p),
               solver(ts.solver()),
               unroller(ts),
-              safeStep(-1),
+              safeStep(0),
               safeStepRef(safeStep),
               muxRef(mux),
               cvRef(cv) {
