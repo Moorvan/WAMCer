@@ -289,3 +289,42 @@ TEST(TranslateTests, Trans) {
     auto st2 = trans.transfer_term(t2);
     auto t1andt2 = s->make_term(And, st1, st2);
 }
+
+TEST(SolverTests, Translator) {
+    auto s = SolverFactory::boolectorSolver();
+    auto s1 = SolverFactory::boolectorSolver();
+    auto t = s->make_symbol("a", s->make_sort(BOOL));
+    auto to_s1 = TermTranslator(s1);
+    auto to_s = TermTranslator(s);
+    s->assert_formula(t);
+    auto t1 = s->make_term(Not, t);
+    t1 = to_s1.transfer_term(t1);
+    t1 = to_s.transfer_term(t1);
+    s->assert_formula(t1);
+    if (s->check_sat().is_sat()) {
+        logger.log(0, "false");
+    } else {
+        logger.log(0, "true");
+    }
+}
+
+TEST(SolverTests, Symbols) {
+    auto s = SolverFactory::boolectorSolver();
+    if (s->check_sat().is_sat()) {
+        logger.log(0, "false");
+    } else {
+        logger.log(0, "true");
+    }
+    auto set = UnorderedTermSet();
+    set.insert(s->make_symbol("a", s->make_sort(BOOL)));
+    set.insert(s->make_symbol("b", s->make_sort(BOOL)));
+    logger.log(0, "set size: {}", set.size());
+    auto set1 = set;
+    set.insert(s->make_symbol("c", s->make_sort(BOOL)));
+    logger.log(0, "set size: {}", set.size());
+    logger.log(0, "set1 size: {}", set1.size());
+    set1.insert(s->make_symbol("d", s->make_sort(BOOL)));
+    set1.insert(s->make_symbol("e", s->make_sort(BOOL)));
+    logger.log(0, "set size: {}", set.size());
+    logger.log(0, "set1 size: {}", set1.size());
+}

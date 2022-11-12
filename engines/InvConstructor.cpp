@@ -20,5 +20,4 @@ namespace wamcer {
             logger.log(defines::logInvConstructor, 0, "v: {}", v.second);
         }
     }
-
 }
