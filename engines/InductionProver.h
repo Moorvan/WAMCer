@@ -21,7 +21,7 @@ namespace wamcer {
         TransitionSystem ts;
         smt::Term p;
         Unroller unroller;
-        smt::TermTranslator* to_slv;
+        smt::TermTranslator to_slv;
 
         int step;
 

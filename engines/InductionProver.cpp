@@ -10,8 +10,8 @@ namespace wamcer {
             ts(transitionSystem),
             slv(transitionSystem.solver()),
             unroller(transitionSystem),
-            p(property) {
-        to_slv = new smt::TermTranslator(slv);
+            p(property),
+            to_slv(transitionSystem.solver()){
         step = 0;
     }
 
@@ -19,7 +19,7 @@ namespace wamcer {
         if (at > step) {
             grow(at);
         }
-        auto tt = slv->make_term(smt::And, to_slv->transfer_term(t), p);
+        auto tt = slv->make_term(smt::And, to_slv.transfer_term(t), p);
         auto constraints = smt::TermVec();
         slv->push();
         for (auto i = 0; i < at; i++) {

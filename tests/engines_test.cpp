@@ -226,8 +226,8 @@ TEST(PredsCP, kind) {
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
-    auto ind = InductionProver(ts, p);
     auto slv = SolverFactory::boolectorSolver();
+    auto ind = InductionProver(ts, p);
     auto to_slv = TermTranslator(slv);
     if (ind.prove(25, to_slv.transfer_term(p))) {
         logger.log(0, "ind pass.");
@@ -252,7 +252,6 @@ TEST(PredsCP, kind) {
     } else {
         logger.log(0, "ind unpass.");
     }
-
     if (ind.prove(10, slv->make_term(false))) {
         logger.log(0, "ind pass.");
     } else {
