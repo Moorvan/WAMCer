@@ -15,7 +15,7 @@ namespace wamcer {
               safeStepRef(safeStep),
               muxRef(mux),
               cvRef(cv) {
-        safeStepRef = defines::noStepSafe;
+        safeStepRef.store(defines::noStepSafe);
     }
 
     BMC::BMC(TransitionSystem &ts, Term &p)
@@ -31,7 +31,7 @@ namespace wamcer {
         } else {
             logger.log(defines::logBMC, 1, "Check safe at init step.");
         }
-        safeStepRef = 0;
+        safeStepRef.store(0);
 
         if (bound == 0) {
             return true;
@@ -43,7 +43,7 @@ namespace wamcer {
                 return false;
             } else {
                 logger.log(defines::logBMC, 1, "Check safe at {} step.", i);
-                safeStepRef = i;
+                safeStepRef.store(i);
             }
         }
         logger.log(defines::logBMC, 1, "Safe in {} steps.", bound);
