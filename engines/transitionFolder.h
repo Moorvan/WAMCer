@@ -17,8 +17,6 @@ namespace wamcer {
 
         void getNStepTrans(int n, smt::Term &out_trans, smt::TermTranslator &translator);
 
-        // todo: get n step ts.
-
     private:
         TransitionSystem ts;
         smt::TermVec trans;
