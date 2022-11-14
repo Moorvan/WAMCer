@@ -358,7 +358,7 @@ TEST(TSFold, foldBench2) {
             exit(1);
         }
     };
-    for (int i = 1; i <= 20; ++i) {
+    for (int i = 1; i <= 15; ++i) {
         f(i);
     }
 
@@ -382,7 +382,7 @@ TEST(TSFold, foldBench2) {
 //    for (int i = 15; i > 1; i--) {
 //        g(i);
 //    }
-    for (int i = 1; i <= 20; i++) {
+    for (int i = 1; i <= 15; i++) {
         g(i);
     }
 

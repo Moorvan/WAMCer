@@ -21,7 +21,7 @@ namespace wamcer {
 
     KInduction::KInduction(TransitionSystem &ts, Term &p)
             : KInduction(ts, p, safeBound, mux, cv) {
-        safeBoundRef.store(defines::allStepSafe);
+        safeBoundRef = defines::allStepSafe;
     }
 
     bool KInduction::run(int bound) {
@@ -33,7 +33,7 @@ namespace wamcer {
                 exit_signal.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready) {
                 return false;
             }
-            while (safeBoundRef.load() != defines::allStepSafe && i > safeBoundRef.load() + 1) {
+            while (safeBoundRef != defines::allStepSafe && i > safeBoundRef + 1) {
                 auto lck = std::unique_lock(muxRef);
                 cvRef.wait(lck);
             }
