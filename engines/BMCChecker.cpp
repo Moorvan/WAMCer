@@ -34,4 +34,17 @@ namespace wamcer {
         return res.is_unsat();
     }
 
+    bool BMCChecker::check(const smt::Term &trans, const smt::Term &p) {
+        auto t_s = unroller.at_time(to_slv->transfer_term(trans), 0);
+        auto p_s = unroller.at_time(to_slv->transfer_term(p), 1);
+        auto notP = slv->make_term(smt::Not, p_s);
+        slv->push();
+        slv->assert_formula(t_s);
+        slv->assert_formula(notP);
+        auto res = slv->check_sat();
+        slv->pop();
+        return res.is_unsat();
+
+    }
+
 }

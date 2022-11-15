@@ -21,6 +21,7 @@ namespace wamcer {
     void TransitionFolder::getNStepTrans(int n, smt::Term &trans_out, smt::TermTranslator &translator) {
         if (n < trans.size() && trans[n] != nullptr) {
             trans_out = translator.transfer_term(trans[n]);
+            return;
         }
         this->trans.resize(n + 1);
         auto out = TransitionSystem(slv);
@@ -31,10 +32,14 @@ namespace wamcer {
         maxTime = 1;
         auto cur_x = 1, cur_out = 0;
         for (auto i = n; i > 0; i = i / 2) {
+            logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i, n);
             if (i % 2 != 0) {
                 out = add(out, x, cur_out, cur_x);
                 cur_out += cur_x;
                 this->trans[cur_out] = out.trans();
+            }
+            if (i == 1) {
+                break;
             }
             x = fold(x, cur_x);
             cur_x *= 2;
@@ -43,6 +48,33 @@ namespace wamcer {
             }
         }
         trans_out = translator.transfer_term(out.trans());
+    }
+
+    void TransitionFolder::foldToNStep(int n, const std::function<void(int, const smt::Term &)>& add_trans) {
+        auto out = TransitionSystem(slv);
+        newTS(out);
+        auto x = TransitionSystem(slv);
+        newTS(x);
+        x = add(x, ts, 0, 0);
+        maxTime = 1;
+        auto cur_x = 1, cur_out = 0;
+        for (auto i = n; i > 0; i = i / 2) {
+            logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i, n);
+            if (i % 2 != 0) {
+                out = add(out, x, cur_out, cur_x);
+                cur_out += cur_x;
+                add_trans(cur_out, out.trans());
+            }
+            if (i == 1) {
+                break;
+            }
+            x = fold(x, cur_x);
+            cur_x *= 2;
+            if (cur_x < n) {
+                add_trans(cur_x, x.trans());
+            }
+        }
+        add_trans(n, out.trans());
     }
 
     TransitionSystem TransitionFolder::fold(const TransitionSystem &in, int x) {

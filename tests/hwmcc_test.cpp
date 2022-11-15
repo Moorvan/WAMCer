@@ -7,13 +7,12 @@
 #include "core/solverFactory.h"
 
 TEST(hwmccTestBench, test1) {
-    logger.set_verbosity(0);
-    auto f = "path of path.txt";
+    logger.set_verbosity(1);
+    auto f = "/Users/yuechen/Developer/pycharm-projects/tools/fs/paths.txt";
     // read paths from f
     std::ifstream ifs(f);
     std::string path;
     while (std::getline(ifs, path)) {
-        // time it with second
         auto start = std::chrono::steady_clock::now();
         logger.log(defines::logTest, 0, "path = {}", path);
         auto res = Runner::runFBMCWithKInduction(path, BTOR2Encoder::decoder, []() -> auto {

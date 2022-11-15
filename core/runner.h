@@ -12,6 +12,8 @@
 #include "engines/bmc.h"
 #include "engines/k_induction.h"
 #include "engines/filterWithSimulation.h"
+#include "engines/transitionFolder.h"
+#include "engines/BMCChecker.h"
 #include "config.h"
 #include "utils/defines.h"
 #include "utils/timer.h"
@@ -39,9 +41,14 @@ namespace wamcer {
                                           int complexPredsLevel = 1,
                                           int simFilterStep = 0);
 
+        static bool runBMCWithFolder(std::string path,
+                                     const std::function<void(std::string &, TransitionSystem &, Term&)> &decoder,
+                                     const std::function<smt::SmtSolver()> &solverFactory,
+                                     int bound = -1, int foldThread = 1, int checkThread = 2);
+
         static bool
         runPredCP(const std::string &path,
-                  const std::function<void(std::string &, TransitionSystem &)> &decoder,
+                  const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                   const std::function<smt::SmtSolver()> &,
                   int bound = -1);
 

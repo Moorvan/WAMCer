@@ -17,6 +17,7 @@ namespace defines {
     const auto logBMCRunner = "[BMC Runner]: ";
     const auto logBMCKindRunner = "[BMC + K-Induction]: ";
     const auto logFBMCKindRunner = "[FBMC + K-Induction]: ";
+    const auto logBMCWithFolderRunner = "[BMC + Folder]: ";
     const auto logTest = "[TEST]: ";
     const auto logFBMC = "[FBMC]: ";
 

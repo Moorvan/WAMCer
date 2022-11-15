@@ -227,8 +227,10 @@ namespace wamcer {
     }
 
     bool
-    Runner::runPredCP(const std::string &path, const std::function<void(std::string &, TransitionSystem &)> &decode,
-                      const std::function<smt::SmtSolver()> &, int bound) {
+    Runner::runPredCP(const std::string &path,
+                      const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                      const std::function<smt::SmtSolver()> &,
+                      int bound) {
 
         return false;
     }
@@ -245,4 +247,108 @@ namespace wamcer {
         return prover.prove(bound, inv);
     }
 
+    bool Runner::runBMCWithFolder(std::string path,
+                                  const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                                  const std::function<smt::SmtSolver()> &solverFactory,
+                                  int bound,
+                                  int foldThread,
+                                  int checkThread) {
+        const int empty = -1;
+        const int success = -2;
+
+        auto trans_mux = std::shared_mutex();
+        auto trans = std::unordered_map < int, Term>();
+        auto trans_slv = SolverFactory::boolectorSolver();
+        auto left_steps = std::unordered_set < int > ();
+        auto left_steps_mux = std::shared_mutex();
+
+        for (int i = 1; i <= bound; i++) {
+            left_steps.insert(i);
+        }
+        auto add_trans = [&](int i, const Term &t) {
+            auto lck = std::unique_lock(trans_mux);
+            auto lck2 = std::unique_lock(left_steps_mux);
+            auto translator = TermTranslator(trans_slv);
+            auto trans_t = translator.transfer_term(t);
+            if (trans.find(i) != trans.end() && left_steps.find(i) != left_steps.end()) {
+                trans.insert({i, t});
+                left_steps.erase(i);
+            }
+        };
+        auto get_one_trans = [&](TermTranslator translator) -> std::pair<int, Term> {
+            auto lck = std::unique_lock(trans_mux);
+            auto lck2 = std::shared_lock(left_steps_mux);
+            if (left_steps.empty() && trans.empty()) {
+                return {success, nullptr};
+            }
+            if (trans.empty()) {
+                return {empty, nullptr};
+            }
+            auto it = *trans.begin();
+            trans.erase(it.first);
+            it.second = translator.transfer_term(it.second);
+            return it;
+        };
+        auto get_one_fold_step = [&]() -> int {
+            auto lck = std::unique_lock(left_steps_mux);
+            if (left_steps.empty()) {
+                return success;
+            }
+            auto it = *left_steps.begin();
+            return it;
+        };
+
+        auto threads = std::vector<std::thread>();
+
+        for (auto i = 0; i < foldThread; i++) {
+            auto t = std::thread([&] {
+                auto slv = solverFactory();
+                auto ts = TransitionSystem(slv);
+                auto p = Term();
+                decoder(path, ts, p);
+                auto folder = TransitionFolder(ts, slv);
+                while (true) {
+                    auto step = get_one_fold_step();
+                    if (step == success) {
+                        return;
+                    }
+                    folder.foldToNStep(step, add_trans);
+                }
+            });
+            threads.push_back(std::move(t));
+        }
+
+        for (auto i = 0; i < checkThread; i++) {
+            auto t = std::thread([&] {
+                auto slv = solverFactory();
+                auto to_slv = TermTranslator(slv);
+                auto ts = TransitionSystem(slv);
+                auto p = Term();
+                decoder(path, ts, p);
+                auto checker = BMCChecker(ts);
+                while (true) {
+                    auto t = get_one_trans(to_slv);
+                    if (t.first == success) {
+                        return;
+                    }
+                    if (t.first == empty) {
+                        // todo: wait
+                        continue;
+                    }
+                    if (checker.check(t.second, p)) {
+                        logger.log(defines::logBMCWithFolderRunner, 1, "safe at {} step", t.first);
+                    } else {
+                        logger.log(defines::logBMCWithFolderRunner, 1, "unsafe at {} step", t.first);
+                        // todo: terminate all threads, and return false
+                        return;
+                    }
+                }
+            });
+        }
+
+        for (auto &t : threads) {
+            t.join();
+        }
+        return false;
+    }
 }

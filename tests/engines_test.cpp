@@ -292,11 +292,13 @@ TEST(TSFold, fold) {
 }
 
 TEST(TSFold, foldBench) {
-    auto path = "../../btors/memory.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/timeout/mul3.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
     BTOR2Encoder::decoder(path, ts, p);
+    logger.log(0, "input size: {}", ts.inputvars().size());
+    logger.log(0, "state size: {}", ts.statevars().size());
     auto start0 = std::chrono::steady_clock::now();
     auto unroller = Unroller(ts);
     auto folder_slv = SolverFactory::boolectorSolver();
@@ -304,8 +306,9 @@ TEST(TSFold, foldBench) {
     auto to_s = TermTranslator(s);
     auto out = Term();
     s->assert_formula(unroller.at_time(ts.init(), 0));
-    out = ts.trans();
-    folder.getNStepTrans(15, out, to_s);
+//    out = ts.trans();
+    folder.getNStepTrans(50, out, to_s);
+    logger.log(0, "construct trans ok.");
     s->assert_formula(unroller.at_time(out, 0));
     auto notP = s->make_term(Not, p);
     s->assert_formula(unroller.at_time(notP, 1));
@@ -313,23 +316,23 @@ TEST(TSFold, foldBench) {
         logger.log(0, "pass");
     } else {
         logger.log(0, "Not pass");
-        exit(1);
+//        exit(1);
     }
     logger.log(0, "time count = {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start0).count());
 
-    auto s1 = SolverFactory::boolectorSolver();
-    auto ts1 = TransitionSystem(s1);
-    auto p1 = Term();
-    BTOR2Encoder::decoder(path, ts1, p1);
-    auto bmc = BMCChecker(ts1);
-    auto start = std::chrono::steady_clock::now();
-    if (bmc.check(15, p1)) {
-        logger.log(0, "bmc pass.");
-    } else {
-        logger.log(0, "bmc unpass.");
-    }
-    logger.log(0, "time count: {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count());
+//    auto s1 = SolverFactory::boolectorSolver();
+//    auto ts1 = TransitionSystem(s1);
+//    auto p1 = Term();
+//    BTOR2Encoder::decoder(path, ts1, p1);
+//    auto bmc = BMCChecker(ts1);
+//    auto start = std::chrono::steady_clock::now();
+//    if (bmc.check(20, p1)) {
+//        logger.log(0, "bmc pass.");
+//    } else {
+//        logger.log(0, "bmc unpass.");
+//    }
+//    logger.log(0, "time count: {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count());
 }
 
 TEST(TSFold, foldBench2) {

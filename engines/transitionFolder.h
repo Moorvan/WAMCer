@@ -17,6 +17,8 @@ namespace wamcer {
 
         void getNStepTrans(int n, smt::Term &out_trans, smt::TermTranslator &translator);
 
+        void foldToNStep(int n,  const std::function<void(int, const smt::Term &)>& add_trans);
+
     private:
         TransitionSystem ts;
         smt::TermVec trans;

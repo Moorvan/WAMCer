@@ -17,6 +17,8 @@ namespace wamcer {
 
         bool check(int at, const smt::Term& t);
 
+        bool check(const smt::Term &trans, const smt::Term &p);
+
     private:
         smt::SmtSolver slv;
         TransitionSystem ts;
