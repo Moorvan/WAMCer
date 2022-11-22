@@ -7,7 +7,8 @@
 #include "engines/fbmc.h"
 
 namespace wamcer {
-    bool Runner::runBMC(const std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
+    bool Runner::runBMC(std::string path,
+                        const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                         smt::SmtSolver(solverFactory)(), int bound) {
         logger.log(defines::logBMCRunner, 0, "file: {}.", path);
         logger.log(defines::logBMCRunner, 0, "BMC running...");
@@ -25,7 +26,8 @@ namespace wamcer {
         return res;
     }
 
-    bool Runner::runBMCWithKInduction(const std::string path, void (*decoder)(std::string, TransitionSystem &, Term &),
+    bool Runner::runBMCWithKInduction(std::string path,
+                                      const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                                       smt::SmtSolver (*solverFactory)(), int bound) {
         logger.log(defines::logBMCKindRunner, 0, "file: {}", path);
         logger.log(defines::logBMCKindRunner, 0, "BMC + K-Induction running...");
@@ -253,8 +255,26 @@ namespace wamcer {
                                   int bound,
                                   int foldThread,
                                   int checkThread) {
+        // check if ts has no constraint
+        {
+            auto s = solverFactory();
+            auto ts = TransitionSystem(s);
+            auto p = Term();
+            decoder(path, ts, p);
+            if (!ts.constraints().empty()) {
+                logger.log(defines::logBMCWithFolderRunner, 0, "ts has constraints, it is not supported yet.");
+                throw std::runtime_error("ts has constraints, it is not supported yet.");
+            }
+        }
+
         const int empty = -1;
         const int success = -2;
+
+        auto result = std::pair<bool, int>{true, bound + 1};
+        auto result_mux = std::shared_mutex();
+
+        auto cond_mux = std::mutex();
+        auto cond = std::condition_variable();
 
         auto trans_mux = std::shared_mutex();
         auto trans = std::unordered_map < int, Term>();
@@ -265,17 +285,23 @@ namespace wamcer {
         for (int i = 1; i <= bound; i++) {
             left_steps.insert(i);
         }
+        auto cnt = 0;
+        auto miss = 0;
         auto add_trans = [&](int i, const Term &t) {
             auto lck = std::unique_lock(trans_mux);
             auto lck2 = std::unique_lock(left_steps_mux);
-            auto translator = TermTranslator(trans_slv);
-            auto trans_t = translator.transfer_term(t);
-            if (trans.find(i) != trans.end() && left_steps.find(i) != left_steps.end()) {
-                trans.insert({i, t});
+            if (left_steps.find(i) != left_steps.end() && trans.find(i) == trans.end()) {
+                auto translator = TermTranslator(trans_slv);
+                auto trans_t = translator.transfer_term(t);
+                cnt++;
+                trans.insert({i, trans_t});
                 left_steps.erase(i);
+                cond.notify_all();
+            } else {
+                miss++;
             }
         };
-        auto get_one_trans = [&](TermTranslator translator) -> std::pair<int, Term> {
+        auto get_one_trans = [&](const SmtSolver &slv) -> std::pair<int, Term> {
             auto lck = std::unique_lock(trans_mux);
             auto lck2 = std::shared_lock(left_steps_mux);
             if (left_steps.empty() && trans.empty()) {
@@ -286,15 +312,19 @@ namespace wamcer {
             }
             auto it = *trans.begin();
             trans.erase(it.first);
+            auto translator = TermTranslator(slv);
             it.second = translator.transfer_term(it.second);
+            logger.log(defines::logBMCWithFolderRunner, 2, "left trans size: {}", trans.size());
             return it;
         };
         auto get_one_fold_step = [&]() -> int {
-            auto lck = std::unique_lock(left_steps_mux);
+            auto lck = std::shared_lock(left_steps_mux);
             if (left_steps.empty()) {
                 return success;
             }
-            auto it = *left_steps.begin();
+            logger.log(defines::logBMCWithFolderRunner, 2, "left steps size: {}", left_steps.size());
+            int it;
+            std::sample(left_steps.begin(), left_steps.end(), &it, 1, std::mt19937{std::random_device{}()});
             return it;
         };
 
@@ -312,6 +342,7 @@ namespace wamcer {
                     if (step == success) {
                         return;
                     }
+                    logger.log(defines::logBMCWithFolderRunner, 1, "folding to step {}", step);
                     folder.foldToNStep(step, add_trans);
                 }
             });
@@ -327,28 +358,69 @@ namespace wamcer {
                 decoder(path, ts, p);
                 auto checker = BMCChecker(ts);
                 while (true) {
-                    auto t = get_one_trans(to_slv);
+                    {
+                        auto lck = std::shared_lock(result_mux);
+                        if (!result.first) {
+                            return;
+                        }
+                    }
+                    auto t = get_one_trans(slv);
                     if (t.first == success) {
                         return;
                     }
                     if (t.first == empty) {
-                        // todo: wait
+                        auto lck = std::unique_lock(cond_mux);
+                        cond.wait(lck);
                         continue;
                     }
+                    logger.log(defines::logBMCWithFolderRunner, 1, "checking step {}", t.first);
                     if (checker.check(t.second, p)) {
                         logger.log(defines::logBMCWithFolderRunner, 1, "safe at {} step", t.first);
                     } else {
                         logger.log(defines::logBMCWithFolderRunner, 1, "unsafe at {} step", t.first);
-                        // todo: terminate all threads, and return false
+                        {
+                            auto lck = std::unique_lock(result_mux);
+                            result.first = false;
+                            if (result.second > t.first) {
+                                result.second = t.first;
+                            }
+                        }
                         return;
                     }
                 }
             });
+            threads.push_back(std::move(t));
         }
 
-        for (auto &t : threads) {
+        // check init
+        {
+            auto slv = solverFactory();
+            auto ts = TransitionSystem(slv);
+            auto p = Term();
+            decoder(path, ts, p);
+            auto checker = BMCChecker(ts);
+            if (checker.check(0, p)) {
+                logger.log(defines::logBMCWithFolderRunner, 1, "safe at 0 step");
+            } else {
+                logger.log(defines::logBMCWithFolderRunner, 1, "unsafe at 0 step");
+                {
+                    auto lck = std::unique_lock(result_mux);
+                    result.first = false;
+                    result.second = 0;
+                }
+            }
+        }
+
+        for (auto &t: threads) {
             t.join();
         }
-        return false;
+        logger.log(defines::logBMCWithFolderRunner, 2, "cnt: {}, miss: {}", cnt, miss);
+        if (result.first) {
+            logger.log(defines::logBMCWithFolderRunner, 0, "Result: safe.");
+            return true;
+        } else {
+            logger.log(defines::logBMCWithFolderRunner, 0, "Result: unsafe at {} step", result.second);
+            return false;
+        }
     }
 }

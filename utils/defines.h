@@ -20,6 +20,7 @@ namespace defines {
     const auto logBMCWithFolderRunner = "[BMC + Folder]: ";
     const auto logTest = "[TEST]: ";
     const auto logFBMC = "[FBMC]: ";
+    const auto logWarning = "[WARNING]: ";
 
     // special bound/step
     const auto noStepSafe = -1;

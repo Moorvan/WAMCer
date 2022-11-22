@@ -26,6 +26,7 @@ namespace wamcer {
         smt::TermTranslator to_slv;
         smt::UnorderedTermMap updates;
         smt::UnorderedTermSet original_inputs;
+        std::vector<std::pair<smt::Term, bool>> original_constraints;
 
         int maxTime;
 

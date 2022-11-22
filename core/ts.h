@@ -55,7 +55,9 @@ namespace wamcer {
 
         static TransitionSystem copy(const TransitionSystem &other_ts);
 
-        smt::Term add_term(smt::Term term);
+        smt::Term add_term(const smt::Term& term);
+
+        void add_init(const smt::Term &term);
 
         virtual ~TransitionSystem() {};
 
@@ -130,14 +132,14 @@ namespace wamcer {
          * Throws an exception if the name has already been used
          *  Note: giving multiple names to the same term is allowed
          */
-        void name_term(const std::string name, const smt::Term &t);
+        void name_term(const std::string& name, const smt::Term &t);
 
         /* Create an input of a given sort
          * @param name the name of the input
          * @param sort the sort of the input
          * @return the input term
          */
-        smt::Term make_inputvar(const std::string name, const smt::Sort &sort);
+        smt::Term make_inputvar(const std::string& name, const smt::Sort &sort);
 
         /* Create an state of a given sort
          * @param name the name of the state
@@ -146,7 +148,7 @@ namespace wamcer {
          *
          * Can get next state var with next(const smt::Term t)
          */
-        smt::Term make_statevar(const std::string name, const smt::Sort &sort);
+        smt::Term make_statevar(const std::string& name, const smt::Sort &sort);
 
         /* Map all next state variables to current state variables in the term
          * @param t the term to map
@@ -198,7 +200,7 @@ namespace wamcer {
          *  @param name the name to look for
          *  @return the matching term if found
          */
-        smt::Term lookup(std::string name) const;
+        smt::Term lookup(const std::string& name) const;
 
         /** Adds a state variable with the given next state
          *  @param cv the current state variable
@@ -330,7 +332,7 @@ namespace wamcer {
          * @param arity the arity of the sort
          * @return a Sort object
          */
-        smt::Sort make_sort(const std::string name, uint64_t arity);
+        smt::Sort make_sort(const std::string& name, uint64_t arity);
 
         /* Create a sort
          * @param sk the SortKind (BOOL, INT, REAL)
@@ -405,7 +407,7 @@ namespace wamcer {
          * otherwise)
          * @return a value term with Sort sort and value val
          */
-        smt::Term make_term(const std::string val,
+        smt::Term make_term(const std::string& val,
                             const smt::Sort &sort,
                             uint64_t base = 10);
 
@@ -536,7 +538,7 @@ namespace wamcer {
          * term
          *  @return true iff all symbols in term are in at least one of the term sets
          */
-        bool contains(const smt::Term &term, UnorderedTermSetPtrVec term_sets) const;
+        bool contains(const smt::Term &term, const UnorderedTermSetPtrVec& term_sets) const;
 
         /* Returns true iff all the symbols in the formula are known */
         virtual bool known_symbols(const smt::Term &term) const;

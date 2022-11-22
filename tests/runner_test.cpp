@@ -20,7 +20,7 @@ TEST(RunnerTests, runBMC) {
 
 TEST(RunnerTests, runBMC0) {
     logger.set_verbosity(1);
-    Runner::runBMC("is a transition system", [](std::string path, TransitionSystem &ts, Term &p) {
+    Runner::runBMC("is a transition system", [](const std::string& path, TransitionSystem &ts, Term &p) {
         counter(ts, p);
     }, []() { return SolverFactory::boolectorSolver(); });
 }
@@ -45,10 +45,10 @@ TEST(RunnerTests, runFBMCWithKInductionTrue) {
 }
 
 TEST(RunnerTests, runBMCWithFolder) {
-    logger.set_verbosity(1);
+    logger.set_verbosity(2);
     auto path = "../../btors/memory.btor2";
-    auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decoder, []() {
+    auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decode_without_constraint, []() {
         return SolverFactory::boolectorSolver();
-    }, 102);
+    }, 30, 3, 1);
 //    ASSERT_TRUE(res);
 }

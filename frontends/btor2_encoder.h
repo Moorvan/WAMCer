@@ -30,19 +30,32 @@ extern "C" {
 
 #include "core/ts.h"
 #include "utils/exceptions.h"
+#include "utils/defines.h"
 
 #include "smt-switch/smt.h"
 
 namespace wamcer {
     class BTOR2Encoder {
     public:
-        BTOR2Encoder(std::string filename, TransitionSystem &ts)
+//        BTOR2Encoder(const std::string& filename, TransitionSystem &ts)
+//                : ts_(ts), solver_(ts.solver()) {
+//            preprocess(filename);
+//            parse(filename);
+//        };
+
+        BTOR2Encoder(const std::string& filename, TransitionSystem &ts, bool constraints_merge_with_prop = false)
                 : ts_(ts), solver_(ts.solver()) {
             preprocess(filename);
-            parse(filename);
+            if (constraints_merge_with_prop) {
+                parse_without_constraint(filename);
+            } else {
+                parse(filename);
+            }
         };
 
         const smt::TermVec &propvec() const { return propvec_; };
+
+        smt::Term prop() const;
 
         const smt::TermVec &justicevec() const { return justicevec_; };
 
@@ -56,7 +69,9 @@ namespace wamcer {
             return no_next_states_;
         }
 
-        static void decoder(std::string path, TransitionSystem& transitionSystem, smt::Term& prop);
+        static void decoder(const std::string& path, TransitionSystem& transitionSystem, smt::Term& prop);
+
+        static void decode_without_constraint(const std::string& path, TransitionSystem& transitionSystem, smt::Term& prop);
 
     protected:
         // converts booleans to bitvector of size one
@@ -74,7 +89,10 @@ namespace wamcer {
         void preprocess(const std::string &filename);
 
         // parse a btor2 file
-        void parse(const std::string filename);
+        void parse(const std::string& filename);
+
+        // parse a btor2 file without constraints
+        void parse_without_constraint(const std::string& filename);
 
         // Important members
         const smt::SmtSolver &solver_;
@@ -97,13 +115,14 @@ namespace wamcer {
         smt::TermVec propvec_;
         smt::TermVec justicevec_;
         smt::TermVec fairvec_;
+        smt::TermVec constraints_;
 
-        Btor2Parser *reader_;
-        Btor2LineIterator it_;
-        Btor2Line *l_;
-        size_t i_;
-        int64_t idx_;
-        bool negated_;
+        Btor2Parser *reader_{};
+        Btor2LineIterator it_{};
+        Btor2Line *l_{};
+        size_t i_{};
+        int64_t idx_{};
+        bool negated_{};
         size_t witness_id_{0};  ///< id of any introduced witnesses for properties
     };
 }

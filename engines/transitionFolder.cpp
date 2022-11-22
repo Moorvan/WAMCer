@@ -8,13 +8,14 @@
 
 namespace wamcer {
 
-    TransitionFolder::TransitionFolder(TransitionSystem &ts, const smt::SmtSolver& folderSolver)
+    TransitionFolder::TransitionFolder(TransitionSystem &ts, const smt::SmtSolver &folderSolver)
             : slv(folderSolver), to_slv(folderSolver), ts(folderSolver) {
         this->ts = TransitionSystem(ts, to_slv);
         updates = this->ts.state_updates();
         this->trans.resize(2);
         maxTime = 0;
         original_inputs = this->ts.inputvars();
+        original_constraints = this->ts.constraints();
         this->trans[1] = this->ts.trans();
     }
 
@@ -29,10 +30,10 @@ namespace wamcer {
         auto x = TransitionSystem(slv);
         newTS(x);
         x = add(x, ts, 0, 0);
-        maxTime = 1;
+        maxTime = std::max(maxTime, 1);
         auto cur_x = 1, cur_out = 0;
         for (auto i = n; i > 0; i = i / 2) {
-            logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i, n);
+            logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i + 1, n);
             if (i % 2 != 0) {
                 out = add(out, x, cur_out, cur_x);
                 cur_out += cur_x;
@@ -50,16 +51,16 @@ namespace wamcer {
         trans_out = translator.transfer_term(out.trans());
     }
 
-    void TransitionFolder::foldToNStep(int n, const std::function<void(int, const smt::Term &)>& add_trans) {
+    void TransitionFolder::foldToNStep(int n, const std::function<void(int, const smt::Term &)> &add_trans) {
         auto out = TransitionSystem(slv);
         newTS(out);
         auto x = TransitionSystem(slv);
         newTS(x);
         x = add(x, ts, 0, 0);
-        maxTime = 1;
+        maxTime = std::max(maxTime, 1);
         auto cur_x = 1, cur_out = 0;
         for (auto i = n; i > 0; i = i / 2) {
-            logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i, n);
+            logger.log(defines::logTransitionFolder, 2, "folding process {}/{}", n - i + 1, n);
             if (i % 2 != 0) {
                 out = add(out, x, cur_out, cur_x);
                 cur_out += cur_x;
@@ -82,12 +83,19 @@ namespace wamcer {
         auto out = TransitionSystem(slv);
         newTS(out);
         auto update = in.state_updates();
-        for (const auto& kv: update) {
+        for (const auto &kv: update) {
             auto t = kv.second;
             t = substituteInput(x, x, t);
             auto foldTerm = slv->substitute(t, update);
             out.assign_next(kv.first, foldTerm);
         }
+//        for (const auto &kv: in.constraints()) {
+//            out.add_constraint(kv.first, kv.second);
+//            auto t = substituteInput(x, x, kv.first);
+//            out.add_constraint(t, kv.second);
+//            auto foldTerm = slv->substitute(t, update);
+//            out.add_constraint(foldTerm, kv.second);
+//        }
         return out;
     }
 
@@ -99,7 +107,7 @@ namespace wamcer {
         auto out = TransitionSystem(slv);
         newTS(out);
         auto update = in1.state_updates();
-        for (const auto& kv: update) {
+        for (const auto &kv: update) {
             auto t = kv.second;
             t = substituteInput(x2, x1, t);
             update[kv.first] = t;
@@ -108,6 +116,16 @@ namespace wamcer {
             auto foldTerm = slv->substitute(kv.second, update);
             out.assign_next(kv.first, foldTerm);
         }
+
+//        for (const auto &kv: in1.constraints()) {
+//            auto t = substituteInput(x2, x1, kv.first);
+//            out.add_constraint(t, kv.second);
+//        }
+//        for (const auto &kv: in2.constraints()) {
+//            out.add_constraint(kv.first, kv.second);
+//            auto foldTerm = slv->substitute(kv.first, update);
+//            out.add_constraint(foldTerm, kv.second);
+//        }
         return out;
     }
 
@@ -121,9 +139,9 @@ namespace wamcer {
         for (const auto &v: ts.named_terms()) {
             out.name_term(v.first, v.second);
         }
-        for (const auto &v: ts.constraints()) {
-            out.add_constraint(v.first, v.second);
-        }
+//        for (const auto &v: ts.constraints()) {
+//            out.add_constraint(v.first, v.second);
+//        }
     }
 
     smt::Term TransitionFolder::substituteInput(int start, int n, smt::Term in) {
@@ -152,7 +170,8 @@ namespace wamcer {
     void TransitionFolder::addInputs(int start, int x) {
         for (auto i = maxTime - start; i < x; i++) {
             for (const auto &v: original_inputs) {
-                ts.add_inputvar(varAtTime(v, start + i));
+                auto vi = varAtTime(v, start + i);
+                ts.add_inputvar(vi);
             }
         }
         maxTime = std::max(maxTime, start + x);

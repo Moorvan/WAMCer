@@ -16,7 +16,7 @@
 #include "ts.h"
 #include <functional>
 
-#include "assert.h"
+#include <cassert>
 #include "smt-switch/substitution_walker.h"
 #include "smt-switch/utils.h"
 
@@ -117,7 +117,7 @@ namespace wamcer {
            and/or trans_ and were transferred already above. Hence these
            terms should be in the term translator cache. */
         for (const auto &e: other_ts.constraints_) {
-            constraints_.push_back({transfer_as(e.first, BOOL), e.second});
+            constraints_.emplace_back(transfer_as(e.first, BOOL), e.second);
         }
         functional_ = other_ts.functional_;
         deterministic_ = other_ts.deterministic_;
@@ -190,7 +190,7 @@ namespace wamcer {
         // have updates
         // technically not even functional if there are constraints
         // TODO: revisit this and possibly rename functional/deterministic
-        if (functional_ && !constraints_.size()) {
+        if (functional_ && constraints_.empty()) {
             deterministic_ = (state_updates_.size() == statevars_.size());
         }
     }
@@ -207,7 +207,7 @@ namespace wamcer {
             Term next_constraint = solver_->substitute(constraint, next_map_);
             // add the next-state version
             trans_ = solver_->make_term(And, trans_, next_constraint);
-            constraints_.push_back({constraint, true});
+            constraints_.emplace_back(constraint, true);
         } else {
             throw PonoException("Invariants should be over current states only.");
         }
@@ -220,7 +220,7 @@ namespace wamcer {
 
         if (no_next(constraint)) {
             trans_ = solver_->make_term(And, trans_, constraint);
-            constraints_.push_back({constraint, true});
+            constraints_.emplace_back(constraint, true);
         } else {
             throw PonoException("Cannot have next-states in an input constraint.");
         }
@@ -232,7 +232,7 @@ namespace wamcer {
         // TODO: revisit this and possibly rename functional/deterministic
         deterministic_ = false;
 
-        if (only_curr(constraint)) {
+        if (only_curr(constraint)) { // only current state variables
             trans_ = solver_->make_term(And, trans_, constraint);
 
             if (to_init_and_next) {
@@ -240,16 +240,17 @@ namespace wamcer {
                 Term next_constraint = solver_->substitute(constraint, next_map_);
                 trans_ = solver_->make_term(And, trans_, next_constraint);
             }
-            constraints_.push_back({constraint, to_init_and_next});
-        } else if (no_next(constraint)) {
+            constraints_.emplace_back(constraint, to_init_and_next);
+        } else if (no_next(constraint)) { // has input
             trans_ = solver_->make_term(And, trans_, constraint);
-            constraints_.push_back({constraint, to_init_and_next});
+            constraints_.emplace_back(constraint, to_init_and_next);
         } else {
             throw PonoException("Constraint cannot have next states");
         }
     }
 
-    void TransitionSystem::name_term(const string name, const Term &t) {
+
+    void TransitionSystem::name_term(const string& name, const Term &t) {
         auto it = named_terms_.find(name);
         if (it != named_terms_.end() && t != it->second) {
             throw PonoException("Name " + name + " has already been used.");
@@ -259,13 +260,13 @@ namespace wamcer {
         term_to_name_[t] = name;
     }
 
-    Term TransitionSystem::make_inputvar(const string name, const Sort &sort) {
+    Term TransitionSystem::make_inputvar(const string& name, const Sort &sort) {
         Term input = solver_->make_symbol(name, sort);
         add_inputvar(input);
         return input;
     }
 
-    Term TransitionSystem::make_statevar(const string name, const Sort &sort) {
+    Term TransitionSystem::make_statevar(const string& name, const Sort &sort) {
         // set to false until there is a next state update for this statevar
         deterministic_ = false;
 
@@ -306,7 +307,7 @@ namespace wamcer {
         return t->to_string();
     }
 
-    smt::Term TransitionSystem::lookup(std::string name) const {
+    smt::Term TransitionSystem::lookup(const std::string& name) const {
         const auto &it = named_terms_.find(name);
         if (it == named_terms_.end()) {
             throw PonoException("Could not find term named: " + name);
@@ -376,7 +377,7 @@ namespace wamcer {
 
 // term building methods -- forwards to SmtSolver solver_
 
-    Sort TransitionSystem::make_sort(const std::string name, uint64_t arity) {
+    Sort TransitionSystem::make_sort(const std::string& name, uint64_t arity) {
         return solver_->make_sort(name, arity);
     }
 
@@ -415,7 +416,7 @@ namespace wamcer {
         return solver_->make_term(i, sort);
     }
 
-    Term TransitionSystem::make_term(const std::string val,
+    Term TransitionSystem::make_term(const std::string& val,
                                      const Sort &sort,
                                      uint64_t base) {
         return solver_->make_term(val, sort, base);
@@ -452,12 +453,12 @@ namespace wamcer {
 
         /* Add next-state functions for state variables in COI. */
         for (const auto &state_var: state_vars_in_coi) {
-            Term next_func = NULL;
+            Term next_func = nullptr;
             const auto &elem = state_updates_.find(state_var);
             if (elem != state_updates_.end())
                 next_func = elem->second;
             /* May find state variables without next-function. */
-            if (next_func != NULL) {
+            if (next_func != nullptr) {
                 Term eq = solver_->make_term(Equal, next_map_.at(state_var), next_func);
                 trans_ = solver_->make_term(And, trans_, eq);
             }
@@ -543,11 +544,11 @@ namespace wamcer {
 // protected methods
 
     bool TransitionSystem::contains(const Term &term,
-                                    UnorderedTermSetPtrVec term_sets) const {
+                                    const UnorderedTermSetPtrVec& term_sets) const {
         UnorderedTermSet visited;
         TermVec to_visit{term};
         Term t;
-        while (to_visit.size()) {
+        while (!to_visit.empty()) {
             t = to_visit.back();
             to_visit.pop_back();
 
@@ -717,9 +718,13 @@ namespace wamcer {
         return {other_ts, tt};
     }
 
-    smt::Term TransitionSystem::add_term(smt::Term t) {
+    smt::Term TransitionSystem::add_term(const smt::Term& t) {
         auto tt = TermTranslator(this->solver_);
         return tt.transfer_term(t);
+    }
+
+    void TransitionSystem::add_init(const smt::Term &term) {
+        init_ = solver_->make_term(And, init_, term);
     }
 
 }  // namespace pono

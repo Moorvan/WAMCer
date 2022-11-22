@@ -7,6 +7,7 @@
 
 #include <thread>
 #include <atomic>
+#include <random>
 #include "smt-switch/smt.h"
 #include "frontends/btor2_encoder.h"
 #include "engines/bmc.h"
@@ -24,17 +25,18 @@
 namespace wamcer {
     class Runner {
     public:
-        static bool runBMC(std::string path, void(*decoder)(std::string, TransitionSystem &, Term &),
+        static bool runBMC(std::string path,
+                           const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                            smt::SmtSolver(solverFactory)(),
                            int bound = -1);
 
         static bool runBMCWithKInduction(std::string path,
-                                         void (*decoder)(std::string, TransitionSystem &, Term &),
+                                         const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                                          smt::SmtSolver(solverFactory)(),
                                          int bound = -1);
 
         static bool runFBMCWithKInduction(std::string path,
-                                          const std::function<void(std::string &, TransitionSystem &, Term&)> &decoder,
+                                          const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                                           std::function<smt::SmtSolver()>,
                                           int bound = -1,
                                           int termRelationLevel = 0,
@@ -42,7 +44,7 @@ namespace wamcer {
                                           int simFilterStep = 0);
 
         static bool runBMCWithFolder(std::string path,
-                                     const std::function<void(std::string &, TransitionSystem &, Term&)> &decoder,
+                                     const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                                      const std::function<smt::SmtSolver()> &solverFactory,
                                      int bound = -1, int foldThread = 1, int checkThread = 2);
 
@@ -54,7 +56,7 @@ namespace wamcer {
 
     private:
         static bool checkInv(std::string path,
-                             const std::function<void(std::string &, TransitionSystem &, Term&)> &decoder,
+                             const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                              Term inv,
                              int bound);
     };

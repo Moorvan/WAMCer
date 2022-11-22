@@ -24,3 +24,22 @@ TEST(hwmccTestBench, test1) {
                 std::chrono::steady_clock::now() - start).count());
     }
 }
+
+TEST(GetFiles, getNoConstraints) {
+    logger.set_verbosity(1);
+    auto f = "/Users/yuechen/Developer/pycharm-projects/tools/fs/sats.txt";
+    // read paths from f
+    std::ifstream ifs(f);
+    std::string path;
+    while (std::getline(ifs, path)) {
+        auto start = std::chrono::steady_clock::now();
+//        logger.log(defines::logTest, 0, "path = {}", path);
+        auto s = SolverFactory::boolectorSolver();
+        auto ts = TransitionSystem(s);
+        auto p = Term();
+        BTOR2Encoder::decoder(path, ts, p);
+        if (ts.constraints().empty()) {
+            logger.log(defines::logTest, 0, "path = {}", path);
+        }
+    }
+}
