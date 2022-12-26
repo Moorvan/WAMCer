@@ -254,14 +254,14 @@ namespace wamcer {
         });
         threads.push_back(std::move(t1));
         for (int i = 0; i < bound; ++i) {
-            auto t = std::thread([&] {
+            auto check = std::thread([&] {
                 predCP.check(i);
             });
-            threads.push_back(std::move(t));
-            auto t1 = std::thread([&] {
+            threads.push_back(std::move(check));
+            auto prove = std::thread([&] {
                 predCP.prove(i);
             });
-            threads.push_back(std::move(t1));
+            threads.push_back(std::move(prove));
         }
 
         for (auto &t: threads) {
