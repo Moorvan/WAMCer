@@ -1287,6 +1287,7 @@ namespace wamcer {
 
     smt::Term BTOR2Encoder::prop() const {
         if (propvec_.empty()) {
+            logger.log(defines::logWarning, 0, "BTOR2Encoder Warning: No property found");
             return ts_.make_term(true);
         }
         if (propvec_.size() > 1) {
@@ -1299,6 +1300,14 @@ namespace wamcer {
 //        } else {
 //            return ts_.make_term(Implies, ts_.make_term(And, constraints_), prop);
 //        }
+    }
+
+    smt::Term BTOR2Encoder::constraint() const {
+        if (constraints_.empty()) {
+            logger.log(defines::logWarning, 0, "constraints is empty");
+            return ts_.make_term(true);
+        }
+        return ts_.make_term(And, constraints_);
     }
 
     void BTOR2Encoder::decoder(const std::string &path,

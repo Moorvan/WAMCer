@@ -49,15 +49,15 @@ namespace wamcer {
                                      int bound = -1, int foldThread = 1, int checkThread = 2);
 
         static bool
-        runPredCP(const std::string &path,
+        runPredCP(std::string &path,
                   const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
-                  const std::function<smt::SmtSolver()> &,
+                  const std::function<smt::SmtSolver()> &solverFactory,
                   int bound = -1);
 
     private:
         static bool checkInv(std::string path,
                              const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
-                             Term inv,
+                             const Term& inv,
                              int bound);
     };
 }

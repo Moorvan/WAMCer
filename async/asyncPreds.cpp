@@ -10,7 +10,11 @@ namespace wamcer {
 
     AsyncPreds::AsyncPreds(const smt::SmtSolver& predSolver) :
             slv(predSolver), to_slv(predSolver) {
-        preds.push_back(AsyncTermSet());
+        preds.emplace_back();
+    }
+
+    AsyncPreds::AsyncPreds(int size): slv(SolverFactory::boolectorSolver()), to_slv(slv) {
+        resize(size);
     }
 
     void AsyncPreds::insert(const smt::Term& pred) {
@@ -51,6 +55,22 @@ namespace wamcer {
         preds[index].erase(terms);
     }
 
+    void AsyncPreds::pop(smt::Term& pred, int index) {
+        if (index > size()) {
+            return;
+        }
+        auto lck = std::shared_lock(mux);
+        preds[index].pop(pred);
+    }
+
+    int AsyncPreds::size(int idx) {
+        if (idx > size()) {
+            throw std::runtime_error("index out of range in AsyncPreds::size");
+        }
+        auto lck = std::shared_lock(mux);
+        return preds[idx].size();
+    }
+
     void AsyncPreds::insert(const smt::TermVec& terms, int index) {
         {
             auto lck = std::unique_lock(mux);
@@ -60,6 +80,11 @@ namespace wamcer {
         }
         auto lck = std::shared_lock(mux);
         preds[index].insert(terms);
+    }
+
+    void AsyncPreds::resize(int size) {
+        auto lck = std::unique_lock(mux);
+        preds.resize(size);
     }
 
 

@@ -5,6 +5,7 @@
 #include "runner.h"
 #include "solverFactory.h"
 #include "engines/fbmc.h"
+#include "engines/PredCP.h"
 
 namespace wamcer {
     bool Runner::runBMC(std::string path,
@@ -229,17 +230,50 @@ namespace wamcer {
     }
 
     bool
-    Runner::runPredCP(const std::string &path,
+    Runner::runPredCP(std::string &path,
                       const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
-                      const std::function<smt::SmtSolver()> &,
+                      const std::function<smt::SmtSolver()> &solverFactory,
                       int bound) {
+        logger.log(defines::logPredCP, 0, "file: {}", path);
+        auto s = solverFactory();
+        auto ts = TransitionSystem(s);
+        auto p = Term();
+        decoder(path, ts, p);
+        auto predCP = PredCP(ts, p, bound);
+
+        // pred generation
+        auto preds = AsyncTermSet();
+        auto predsGen = new DirectConstructor(ts, p, preds, s);
+        predsGen->generatePreds(0, 1);
+
+        predCP.insert(preds, 0);
+        auto threads = std::vector<std::thread>();
+
+        auto t1 = std::thread([&] {
+            predCP.propBMC();
+        });
+        threads.push_back(std::move(t1));
+        for (int i = 0; i < bound; ++i) {
+            auto t = std::thread([&] {
+                predCP.check(i);
+            });
+            threads.push_back(std::move(t));
+            auto t1 = std::thread([&] {
+                predCP.prove(i);
+            });
+            threads.push_back(std::move(t1));
+        }
+
+        for (auto &t: threads) {
+            t.join();
+        }
 
         return false;
     }
 
     bool Runner::checkInv(std::string path,
                           const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
-                          Term inv,
+                          const Term &inv,
                           int bound) {
         auto s = SolverFactory::boolectorSolver();
         auto ts = TransitionSystem(s);
@@ -256,16 +290,16 @@ namespace wamcer {
                                   int foldThread,
                                   int checkThread) {
         // check if ts has no constraint
-        {
-            auto s = solverFactory();
-            auto ts = TransitionSystem(s);
-            auto p = Term();
-            decoder(path, ts, p);
-            if (!ts.constraints().empty()) {
-                logger.log(defines::logBMCWithFolderRunner, 0, "ts has constraints, it is not supported yet.");
-                throw std::runtime_error("ts has constraints, it is not supported yet.");
-            }
-        }
+//        {
+//            auto s = solverFactory();
+//            auto ts = TransitionSystem(s);
+//            auto p = Term();
+//            decoder(path, ts, p);
+//            if (!ts.constraints().empty()) {
+//                logger.log(defines::logBMCWithFolderRunner, 0, "ts has constraints, it is not supported yet.");
+//                throw std::runtime_error("ts has constraints, it is not supported yet.");
+//            }
+//        }
 
         const int empty = -1;
         const int success = -2;
@@ -277,9 +311,9 @@ namespace wamcer {
         auto cond = std::condition_variable();
 
         auto trans_mux = std::shared_mutex();
-        auto trans = std::unordered_map < int, Term>();
+        auto trans = std::unordered_map<int, Term>();
         auto trans_slv = SolverFactory::boolectorSolver();
-        auto left_steps = std::unordered_set < int > ();
+        auto left_steps = std::unordered_set<int>();
         auto left_steps_mux = std::shared_mutex();
 
         for (int i = 1; i <= bound; i++) {

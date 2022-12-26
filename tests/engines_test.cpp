@@ -194,30 +194,25 @@ TEST(FBMCTests, FBMCWithKind) {
 
 TEST(PredsCP, bmc) {
     logger.set_verbosity(2);
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/counter-101.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n2_w8_d128_e0.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = BTOR2Encoder(path, ts).propvec().at(0);
     auto bmc = BMCChecker(ts);
     auto slv = SolverFactory::boolectorSolver();
     auto to_slv = TermTranslator(slv);
-    if (bmc.check(3, to_slv.transfer_term(p))) {
-        logger.log(0, "bmc pass.");
-    } else {
-        logger.log(0, "bmc unpass.");
+    for (auto i = 0; i < 20; i++) {
+        if (bmc.check(i + 1, to_slv.transfer_term(p))) {
+            logger.log(0, "bmc pass at {}", i + 1);
+        } else {
+            logger.log(0, "bmc unpass.");
+        }
     }
-
-    if (bmc.check(25, to_slv.transfer_term(p))) {
-        logger.log(0, "bmc pass.");
-    } else {
-        logger.log(0, "bmc unpass.");
-    }
-
-    if (bmc.check(20, to_slv.transfer_term(s->make_term(Not, p)))) {
-        logger.log(0, "bmc pass.");
-    } else {
-        logger.log(0, "bmc unpass.");
-    }
+//    if (bmc.check(20, to_slv.transfer_term(p))) {
+//        logger.log(0, "bmc pass.");
+//    } else {
+//        logger.log(0, "bmc unpass.");
+//    }
 }
 
 TEST(PredsCP, kind) {
@@ -298,6 +293,15 @@ TEST(TSFold, cntFoldBMC) {
     auto p = Term();
 //    BTOR2Encoder::decoder(path, ts, p);
     counter(ts, p);
+    logger.log(0, "input size: {}", ts.inputvars().size());
+    logger.log(0, "state size: {}", ts.statevars().size());
+    logger.log(0, "constraint size: {}", ts.constraints().size());
+    logger.log(0, "updates size: {}", ts.state_updates().size());
+    ts.convert_no_updates_to_inputs();
+    logger.log(0, "input size: {}", ts.inputvars().size());
+    logger.log(0, "state size: {}", ts.statevars().size());
+    logger.log(0, "constraint size: {}", ts.constraints().size());
+    logger.log(0, "updates size: {}", ts.state_updates().size());
     auto folder_slv = SolverFactory::boolectorSolver();
     auto to_s = TermTranslator(s);
     auto folder = TransitionFolder(ts, folder_slv);
@@ -330,11 +334,12 @@ TEST(TSFold, cntFoldBMC) {
 TEST(TSFold, BMCcase) {
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
+    ts.convert_no_updates_to_inputs();
     auto p = Term();
     counter(ts, p);
     logger.log(0, "constraints size: {}", ts.constraints().size());
     auto bmc = BMCChecker(ts);
-    auto f = [&] (int i) {
+    auto f = [&](int i) {
         if (bmc.check(i, p)) {
             logger.log(0, "bmc pass in {} step.", i);
         } else {
@@ -372,18 +377,23 @@ TEST(TSFold, foldBench) {
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
-    BTOR2Encoder::decoder(path, ts, p);
+//    BTOR2Encoder::decoder(path, ts, p);
+    auto encoder = BTOR2Encoder(path, ts, true);
+    p = encoder.prop();
+    auto init = ts.init();
+    init = ts.make_term(And, init, encoder.constraint());
     logger.log(0, "input size: {}", ts.inputvars().size());
     logger.log(0, "state size: {}", ts.statevars().size());
+    logger.log(0, "constraints size: {}", ts.constraints().size());
     auto start0 = std::chrono::steady_clock::now();
     auto unroller = Unroller(ts);
     auto folder_slv = SolverFactory::boolectorSolver();
     auto folder = TransitionFolder(ts, folder_slv);
     auto to_s = TermTranslator(s);
     auto out = Term();
-    s->assert_formula(unroller.at_time(ts.init(), 0));
+    s->assert_formula(unroller.at_time(init, 0));
 //    out = ts.trans();
-    folder.getNStepTrans(20, out, to_s);
+    folder.getNStepTrans(3, out, to_s);
     logger.log(0, "construct trans ok.");
     s->assert_formula(unroller.at_time(out, 0));
     auto notP = s->make_term(Not, p);
@@ -411,7 +421,9 @@ TEST(TSFold, foldBench) {
 //    logger.log(0, "time count: {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count());
 }
 
-auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/wolf/2019A/picorv32_mutAY_nomem-p4.btor";
+//auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/wolf/2019A/picorv32_mutAY_nomem-p4.btor";
+//auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/wolf/2019A/picorv32_mutBX_nomem-p5.btor";
 
 TEST(TSFold, foldBench2) {
 //    logger.set_verbosity(1);
@@ -420,50 +432,110 @@ TEST(TSFold, foldBench2) {
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
-    BTOR2Encoder::decoder(path, ts, p);
-    logger.log(0, "input size: {}", ts.inputvars().size());
-    logger.log(0, "state size: {}", ts.statevars().size());
-    logger.log(0, "constraint size: {}", ts.constraints().size());
+//    BTOR2Encoder::decode_without_constraint(path, ts, p);
+//    ts.convert_no_updates_to_inputs();
+
+    // consider without constraint
+    auto encoder = BTOR2Encoder(path, ts, true);
+    p = encoder.prop();
+    logger.log(0, "p = {}", p);
+    ts.add_init(encoder.constraint());
+    p = ts.make_term(Implies, encoder.constraint(), p);
+
+//    ts.convert_no_updates_to_inputs();
+//    logger.log(0, "input size: {}", ts.inputvars().size());
+//    logger.log(0, "state size: {}", ts.statevars().size());
+//    logger.log(0, "constraint size: {}", ts.constraints().size());
+//    logger.log(0, "updates size: {}", ts.state_updates().size());
     auto unroller = Unroller(ts);
     auto folder_slv = SolverFactory::boolectorSolver();
     auto folder = TransitionFolder(ts, folder_slv);
     auto to_s = TermTranslator(s);
-    auto out = Term();
-    auto f = [&](int n) {
-        s->push();
-        s->assert_formula(unroller.at_time(ts.init(), 0));
-        out = ts.trans();
-        folder.getNStepTrans(n, out, to_s);
-        s->assert_formula(unroller.at_time(out, 0));
-        auto notP = s->make_term(Not, p);
-        s->assert_formula(unroller.at_time(notP, 1));
-        if (s->check_sat().is_unsat()) {
-            logger.log(0, "bmc with fold pass in {} step", n);
-        } else {
-            logger.log(0, "Not pass");
-            exit(1);
-        }
-        s->pop();
-    };
-    {
-        auto slv = SolverFactory::boolectorSolver();
-        auto ts = TransitionSystem(slv);
-        auto p = Term();
-        BTOR2Encoder::decoder(path, ts, p);
-        auto checker = BMCChecker(ts);
-        if (checker.check(0, p)) {
-            logger.log(defines::logBMCWithFolderRunner, 1, "safe at 0 step");
-        } else {
-            logger.log(defines::logBMCWithFolderRunner, 1, "unsafe at 0 step");
-            exit(0);
-        }
-    }
-    for (int i = 1; i <= 50; ++i) {
-        f(i);
-    }
 
-    logger.log(0, "time count = {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - start0).count());
+//    s->push();
+//    {
+////        if (ts.only_curr(p)) {
+////            logger.log(0, "only curr");
+////        } else {
+////            if (ts.no_next(p)) {
+////                logger.log(0, "no next");
+////            } else {
+////                logger.log(0, "has next");
+////            }
+////        } // statevars_, &inputvars_
+////        if (ts.only_curr(ts.init())) {
+////            logger.log(0, "only curr");
+////        } else {
+////            logger.log(0, "has next");
+////        }
+//        s->assert_formula(unroller.at_time(ts.init(), 0));
+//        s->assert_formula(unroller.at_time(ts.trans(), 0));
+//        s->assert_formula(unroller.at_time(ts.trans(), 1));
+//        s->assert_formula(unroller.at_time(ts.trans(), 2));
+//        s->assert_formula(unroller.at_time(ts.trans(), 3));
+//        s->assert_formula(unroller.at_time(ts.trans(), 4));
+//        p = s->make_term(Implies, encoder.constraint(), p);
+//        auto notP = s->make_term(Not, p);
+//        s->assert_formula(unroller.at_time(notP, 5));
+//        s->assert_formula(ts.make_term(Not, p));
+//        if (s->check_sat().is_unsat()) {
+//            logger.log(0, "is unsat");
+//        } else {
+//            logger.log(0, "sat");
+//            exit(1);
+//        }
+//    }
+//    s->pop();
+//    exit(0);
+
+    auto out = Term();
+    auto bmc1 = BMCChecker(ts);
+    for (auto i = 1; i < 22; i++) {
+        out = Term();
+        folder.getNStepTrans(i, out, to_s);
+        if (bmc1.check(out, p)) {
+            logger.log(0, "bmc with fold pass in {} step", i);
+        } else {
+            logger.log(0, "Not pass at {} step", i);
+        }
+    }
+//    s->assert_formula(unroller.at_time(ts.init(), 0));
+//    auto f = [&](int n) {
+//        out = Term();
+//        folder.getNStepTrans(n, out, to_s);
+//        if (bmc1.check(out, p)) {
+//            logger.log(0, "bmc with fold pass in {} step", n);
+//        } else {
+//            logger.log(0, "Not pass at {} step", n);
+//        }
+//        s->assert_formula(unroller.at_time(out, 0));
+//        auto notP = s->make_term(Not, p);
+//        s->assert_formula(unroller.at_time(notP, 1));
+//        if (s->check_sat().is_unsat()) {
+//        } else {
+//            exit(1);
+//        }
+//        s->pop();
+//    };
+//    {
+//        auto slv = SolverFactory::boolectorSolver();
+//        auto ts = TransitionSystem(slv);
+//        auto p = Term();
+//        BTOR2Encoder::decoder(path, ts, p);
+//        auto checker = BMCChecker(ts);
+//        if (checker.check(0, p)) {
+//            logger.log(defines::logBMCWithFolderRunner, 0, "safe at 0 step");
+//        } else {
+//            logger.log(defines::logBMCWithFolderRunner, 0, "unsafe at 0 step");
+//            exit(0);
+//        }
+//    }
+//    for (int i = 1; i <= 20; ++i) {
+//        f(i);
+//    }
+
+//    logger.log(0, "time count = {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(
+//            std::chrono::steady_clock::now() - start0).count());
 
 //    auto s1 = SolverFactory::boolectorSolver();
 //    auto ts1 = TransitionSystem(s1);
@@ -494,11 +566,17 @@ TEST(TSFold, BMC) {
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
-    BTOR2Encoder::decoder(path, ts, p);
+//    BTOR2Encoder::decoder(path, ts, p);
+//    logger.log(0, "prop: {}", p);
+    auto encoder = BTOR2Encoder(path, ts, true);
+    p = encoder.prop();
+    ts.add_init(encoder.constraint());
+    p = ts.make_term(Implies, encoder.constraint(), p);
+//    ts.convert_no_updates_to_inputs();
     auto bmc = BMCChecker(ts);
 //    logger.log(0, "prop: {}", p);
     logger.log(0, "constraints size: {}", ts.constraints().size());
-    auto f = [&] (int i) {
+    auto f = [&](int i) {
         if (bmc.check(i, p)) {
             logger.log(0, "bmc pass in {} step.", i);
         } else {

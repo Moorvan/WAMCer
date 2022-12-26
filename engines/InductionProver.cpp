@@ -9,9 +9,9 @@ namespace wamcer {
     InductionProver::InductionProver(TransitionSystem &transitionSystem, smt::Term &property) :
             ts(transitionSystem),
             slv(transitionSystem.solver()),
-            unroller(transitionSystem),
-            p(property) {
+            unroller(transitionSystem) {
         to_slv = new smt::TermTranslator(slv);
+        p = to_slv->transfer_term(property);
         step = 0;
     }
 

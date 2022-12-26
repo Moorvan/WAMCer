@@ -13,7 +13,7 @@ namespace wamcer {
         this->ts = TransitionSystem(ts, to_slv);
         updates = this->ts.state_updates();
         this->trans.resize(2);
-        maxTime = 0;
+        maxTime = 1;
         original_inputs = this->ts.inputvars();
         original_constraints = this->ts.constraints();
         this->trans[1] = this->ts.trans();
@@ -29,8 +29,8 @@ namespace wamcer {
         newTS(out);
         auto x = TransitionSystem(slv);
         newTS(x);
-        x = add(x, ts, 0, 0);
-        maxTime = std::max(maxTime, 1);
+        x = add(x, ts, 0, 1);
+//        x = ts;
         auto cur_x = 1, cur_out = 0;
         for (auto i = n; i > 0; i = i / 2) {
             logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i + 1, n);
@@ -56,8 +56,7 @@ namespace wamcer {
         newTS(out);
         auto x = TransitionSystem(slv);
         newTS(x);
-        x = add(x, ts, 0, 0);
-        maxTime = std::max(maxTime, 1);
+        x = add(x, ts, 0, 1);
         auto cur_x = 1, cur_out = 0;
         for (auto i = n; i > 0; i = i / 2) {
             logger.log(defines::logTransitionFolder, 2, "folding process {}/{}", n - i + 1, n);
@@ -79,13 +78,17 @@ namespace wamcer {
     }
 
     TransitionSystem TransitionFolder::fold(const TransitionSystem &in, int x) {
-        addInputs(x, x);
+        addInputsTo(2 * x);
         auto out = TransitionSystem(slv);
         newTS(out);
         auto update = in.state_updates();
-        for (const auto &kv: update) {
+        for (auto &kv: update) {
             auto t = kv.second;
             t = substituteInput(x, x, t);
+            update[kv.first] = t;
+        }
+        for (const auto &kv: in.state_updates()) {
+            auto t = kv.second;
             auto foldTerm = slv->substitute(t, update);
             out.assign_next(kv.first, foldTerm);
         }
@@ -100,21 +103,24 @@ namespace wamcer {
     }
 
     TransitionSystem TransitionFolder::add(const TransitionSystem &in1, const TransitionSystem &in2, int x1, int x2) {
-        if (in2.state_updates().empty()) {
-            return add(in2, in1, x2, x1);
-        }
-        addInputs(x2, x1);
+        addInputsTo(x1 + x2);
         auto out = TransitionSystem(slv);
         newTS(out);
-        auto update = in1.state_updates();
+        auto update = in2.state_updates();
         for (const auto &kv: update) {
             auto t = kv.second;
-            t = substituteInput(x2, x1, t);
+            t = substituteInput(x1, x2, t);
             update[kv.first] = t;
         }
-        for (const auto &kv: in2.state_updates()) {
-            auto foldTerm = slv->substitute(kv.second, update);
-            out.assign_next(kv.first, foldTerm);
+        if (x1 != 0) {
+            for (const auto &kv: in1.state_updates()) {
+                auto foldTerm = slv->substitute(kv.second, update);
+                out.assign_next(kv.first, foldTerm);
+            }
+        } else {
+            for (const auto& kv : update) {
+                out.assign_next(kv.first, kv.second);
+            }
         }
 
 //        for (const auto &kv: in1.constraints()) {
@@ -152,7 +158,6 @@ namespace wamcer {
                 mp[varAtTime(v, i)] = varAtTime(v, start + i);
             }
         }
-        maxTime = std::max(maxTime, start + n);
         return slv->substitute(std::move(in), mp);
     }
 
@@ -167,13 +172,12 @@ namespace wamcer {
         return slv->make_symbol(name, in->get_sort());
     }
 
-    void TransitionFolder::addInputs(int start, int x) {
-        for (auto i = maxTime - start; i < x; i++) {
+    void TransitionFolder::addInputsTo(int x) {
+        for (auto i = maxTime; i < x; i++) {
             for (const auto &v: original_inputs) {
-                auto vi = varAtTime(v, start + i);
-                ts.add_inputvar(vi);
+                ts.add_inputvar(varAtTime(v, i));
             }
         }
-        maxTime = std::max(maxTime, start + x);
+        maxTime = std::max(maxTime, x);
     }
 }

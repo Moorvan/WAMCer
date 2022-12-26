@@ -727,4 +727,20 @@ namespace wamcer {
         init_ = solver_->make_term(And, init_, term);
     }
 
+    void TransitionSystem::convert_no_updates_to_inputs() {
+        UnorderedTermSet no_update_statevars;
+        for (const auto& state : statevars_) {
+            if (state_updates_.find(state) == state_updates_.end()) {
+                no_update_statevars.insert(state);
+            }
+        }
+        for (const auto& state : no_update_statevars) {
+            statevars_.erase(state);
+            next_statevars_.erase(next_map_.at(state));
+            curr_map_.erase(next_map_.at(state));
+            next_map_.erase(state);
+            add_inputvar(state);
+        }
+    }
+
 }  // namespace pono

@@ -23,6 +23,8 @@ namespace wamcer {
 
         void erase(const smt::TermVec& terms);
 
+        void pop(smt::Term& term);
+
         void filter(std::function<bool(smt::Term)> filter);
 
         void map(const std::function<void(smt::Term)>& map);

@@ -37,12 +37,6 @@ extern "C" {
 namespace wamcer {
     class BTOR2Encoder {
     public:
-//        BTOR2Encoder(const std::string& filename, TransitionSystem &ts)
-//                : ts_(ts), solver_(ts.solver()) {
-//            preprocess(filename);
-//            parse(filename);
-//        };
-
         BTOR2Encoder(const std::string& filename, TransitionSystem &ts, bool constraints_merge_with_prop = false)
                 : ts_(ts), solver_(ts.solver()) {
             preprocess(filename);
@@ -56,6 +50,8 @@ namespace wamcer {
         const smt::TermVec &propvec() const { return propvec_; };
 
         smt::Term prop() const;
+
+        smt::Term constraint() const;
 
         const smt::TermVec &justicevec() const { return justicevec_; };
 

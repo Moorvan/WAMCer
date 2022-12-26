@@ -10,6 +10,7 @@ namespace defines {
     const auto logDirectConstructor = "[DirectConstructor]: ";
     const auto logInvConstructor = "[InvConstructor]: ";
     const auto logTransitionFolder = "[TransitionFolder]: ";
+    const auto logPredCP = "[PredCP]: ";
     const auto logSim = "[BtorSim]: ";
     const auto logBMC = "[BMC]: ";
     const auto logKind = "[K-Induction]: ";

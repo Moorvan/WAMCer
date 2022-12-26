@@ -47,8 +47,8 @@ TEST(RunnerTests, runFBMCWithKInductionTrue) {
 TEST(RunnerTests, runBMCWithFolder) {
     logger.set_verbosity(2);
     auto path = "../../btors/memory.btor2";
-    auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decode_without_constraint, []() {
+    auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decoder, []() {
         return SolverFactory::boolectorSolver();
-    }, 30, 3, 1);
-//    ASSERT_TRUE(res);
+    }, 100, 5, 2);
+    ASSERT_TRUE(res);
 }

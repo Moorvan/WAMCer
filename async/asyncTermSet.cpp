@@ -40,11 +40,20 @@ namespace wamcer {
         }
     }
 
+    void AsyncTermSet::pop(smt::Term& term) {
+        auto lck = std::unique_lock(mux);
+        // pop one term in data and assign it to term
+        if (size() > 0) {
+            term = *data.begin();
+            data.erase(term);
+        }
+    }
+
     void AsyncTermSet::filter(std::function<bool(smt::Term)> f) {
         auto erases = smt::TermVec();
         {
             auto lck = std::shared_lock(mux);
-            for (auto term: data) {
+            for (const auto& term: data) {
                 if (f(term)) {
                     erases.push_back(term);
                 }

@@ -30,7 +30,9 @@ add_library(WAMCer-lib
         engines/BMCChecker.cpp
         engines/InductionProver.cpp
         engines/InvConstructor.cpp
-        engines/transitionFolder.cpp)
+        engines/transitionFolder.cpp
+        engines/PredCP.cpp
+        engines/PredCP.h)
 
 
 # link smt-switch and gmp, or boost

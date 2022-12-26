@@ -38,7 +38,10 @@ TEST(GetFiles, getNoConstraints) {
         auto ts = TransitionSystem(s);
         auto p = Term();
         BTOR2Encoder::decoder(path, ts, p);
-        if (ts.constraints().empty()) {
+//        if (ts.constraints().empty()) {
+//            logger.log(defines::logTest, 0, "path = {}", path);
+//        }
+        if (ts.only_curr(p)) {
             logger.log(defines::logTest, 0, "path = {}", path);
         }
     }

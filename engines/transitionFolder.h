@@ -40,7 +40,7 @@ namespace wamcer {
 
         smt::Term varAtTime(smt::Term in, int time);
 
-        void addInputs(int start, int x);
+        void addInputsTo(int x);
 
     };
 }

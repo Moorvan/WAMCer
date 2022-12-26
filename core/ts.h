@@ -237,7 +237,7 @@ namespace wamcer {
         /* Returns the next state updates
          * @return a map of functional next state updates
          */
-        const smt::UnorderedTermMap &state_updates() const {
+        smt::UnorderedTermMap state_updates() const {
             return state_updates_;
         };
 
@@ -463,6 +463,8 @@ namespace wamcer {
         void rebuild_trans_based_on_coi(
                 const smt::UnorderedTermSet &state_vars_in_coi,
                 const smt::UnorderedTermSet &input_vars_in_coi);
+
+        void convert_no_updates_to_inputs();
 
     protected:
         // solver

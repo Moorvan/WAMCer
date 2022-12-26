@@ -15,6 +15,8 @@ namespace wamcer {
     public:
         explicit AsyncPreds(const smt::SmtSolver &predSolver);
 
+        AsyncPreds(int size);
+
         ~AsyncPreds() {
             logger.log(0, "AsyncPreds destructed");
         }
@@ -31,7 +33,13 @@ namespace wamcer {
 
         void erase(const smt::TermVec &terms, int index);
 
+        void pop(smt::Term& pred, int index);
+
+        int size(int idx);
+
         void insert(const smt::TermVec &terms, int index);
+
+        void resize(int size);
 
     private:
         AsyncTermSetVec preds;
