@@ -31,10 +31,12 @@ int main(int argc, char *argv[]) {
     auto ts = TransitionSystem(slv);
     BTOR2Encoder::decoder(btor2_path, ts, prop);
     auto gen = DirectConstructor(ts, prop, preds, slv);
-    gen.generatePreds(0, 0);
-    // print the preds:
+    gen.generatePreds(1, 0);
+    // print the predse
+    auto file = std::ofstream("./preds.txt");
     preds.map([&](auto t) {
-        logger.log(0, "pred: {}", t);
+//        logger.log(0, "{}", t);
+        file << t << std::endl;
     });
 
     return 0;
