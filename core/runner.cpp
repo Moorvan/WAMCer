@@ -230,7 +230,7 @@ namespace wamcer {
     }
 
     bool
-    Runner::runPredCP(std::string &path,
+    Runner::runPredCP(std::string path,
                       const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                       const std::function<smt::SmtSolver()> &solverFactory,
                       int bound) {

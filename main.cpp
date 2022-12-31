@@ -1,6 +1,7 @@
 #include "core/solverFactory.h"
 #include "engines/fbmc.h"
 #include "engines/DirectConstructor.h"
+#include "engines/BMCChecker.h"
 #include "utils/cmdline.h"
 #include "utils/logger.h"
 #include "frontends/btorSim.h"
@@ -38,6 +39,13 @@ int main(int argc, char *argv[]) {
 //        logger.log(0, "{}", t);
         file << t << std::endl;
     });
+
+    auto checker = BMCChecker(ts);
+    if (checker.check(10, prop)) {
+        logger.log(0, "safe");
+    } else {
+        logger.log(0, "unsafe");
+    }
 
     return 0;
 }

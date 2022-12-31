@@ -52,3 +52,12 @@ TEST(RunnerTests, runBMCWithFolder) {
     }, 100, 5, 2);
     ASSERT_TRUE(res);
 }
+
+TEST(RunnerTest, runPredCP) {
+    logger.set_verbosity(1);
+    auto path = "../../btors/memory.btor2";
+    auto res = Runner::runPredCP(path, BTOR2Encoder::decoder, []() {
+        return SolverFactory::boolectorSolver();
+    }, 10);
+    ASSERT_TRUE(res);
+}
