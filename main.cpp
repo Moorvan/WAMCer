@@ -47,5 +47,11 @@ int main(int argc, char *argv[]) {
         logger.log(0, "unsafe");
     }
 
+    // get map[string -> term]
+    auto mp = ts.get_string_to_vars();
+    for (auto& [k, v] : mp) {
+        logger.log(0, "{} -> {}", k, v);
+    }
+
     return 0;
 }

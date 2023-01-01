@@ -34,6 +34,8 @@ namespace wamcer {
                   deterministic_(false) {
         }
 
+        std::unordered_map<std::string, smt::Term> get_string_to_vars() const;
+
         friend void swap(TransitionSystem &ts1, TransitionSystem &ts2);
 
         /** Copy assignment using

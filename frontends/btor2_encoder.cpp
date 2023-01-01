@@ -1314,7 +1314,6 @@ namespace wamcer {
                                TransitionSystem &transitionSystem,
                                smt::Term &prop) {
         prop = BTOR2Encoder(path, transitionSystem).prop();
-
     }
 
     void BTOR2Encoder::decode_without_constraint(const std::string &path,

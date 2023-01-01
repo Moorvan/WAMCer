@@ -743,4 +743,18 @@ namespace wamcer {
         }
     }
 
+    std::unordered_map<std::string, smt::Term> TransitionSystem::get_string_to_vars() const {
+        auto mp = std::unordered_map<std::string, smt::Term>();
+        for (const auto& state : statevars_) {
+            mp[state->to_string()] = state;
+        }
+        for (const auto& input : inputvars_) {
+            mp[input->to_string()] = input;
+        }
+        for (const auto& next : next_statevars_) {
+            mp[next->to_string()] = next;
+        }
+        return mp;
+    }
+
 }  // namespace pono
