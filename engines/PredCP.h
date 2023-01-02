@@ -5,6 +5,7 @@
 #ifndef WAMCER_PREDCP_H
 #define WAMCER_PREDCP_H
 
+#include <atomic>
 #include "async/asyncPreds.h"
 #include "core/unroller.h"
 #include "utils/logger.h"
@@ -27,6 +28,7 @@ namespace wamcer {
         void insert(AsyncTermSet &terms, int at);
 
     private:
+        std::mutex global_mux;
         std::vector<std::mutex> mutexes;
         std::vector<std::condition_variable> cvs;
         std::mutex prove_wait_mux;

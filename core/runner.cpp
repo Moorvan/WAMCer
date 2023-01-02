@@ -229,6 +229,7 @@ namespace wamcer {
         }
     }
 
+    // There are bugs in the solver's data for concurrent access.
     bool
     Runner::runPredCP(std::string path,
                       const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
@@ -244,7 +245,8 @@ namespace wamcer {
         // pred generation
         auto preds = AsyncTermSet();
         auto predsGen = new DirectConstructor(ts, p, preds, s);
-        predsGen->generatePreds(0, 1);
+        predsGen->generatePreds();
+        logger.log(defines::logPredCP, 1, "Predicates size: {}.", preds.size());
 
         predCP.insert(preds, 0);
         auto threads = std::vector<std::thread>();
@@ -253,15 +255,19 @@ namespace wamcer {
             predCP.propBMC();
         });
         threads.push_back(std::move(t1));
-        for (int i = 0; i < bound; ++i) {
-            auto check = std::thread([&] {
+
+        // pred in pools[k] means that safe in k steps
+        // check 0 - bound-1 pools
+        for (int i = 0; i < bound; i++) {
+            threads.emplace_back([&](int i) {
                 predCP.check(i);
-            });
-            threads.push_back(std::move(check));
-            auto prove = std::thread([&] {
+            }, i);
+        }
+        // prove 1 - bound pools
+        for (int i = 1; i <= bound; ++i) {
+            threads.emplace_back([&](int i) {
                 predCP.prove(i);
-            });
-            threads.push_back(std::move(prove));
+            }, i);
         }
 
         for (auto &t: threads) {

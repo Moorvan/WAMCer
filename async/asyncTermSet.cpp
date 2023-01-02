@@ -42,8 +42,7 @@ namespace wamcer {
 
     void AsyncTermSet::pop(smt::Term& term) {
         auto lck = std::unique_lock(mux);
-        // pop one term in data and assign it to term
-        if (size() > 0) {
+        if (!data.empty()) {
             term = *data.begin();
             data.erase(term);
         }

@@ -22,9 +22,12 @@ namespace wamcer {
         if (at >= max_step) {
             return false;
         }
+        auto lock = std::unique_lock<std::mutex>(global_mux);
         auto new_ts = TransitionSystem::copy(ts);
         auto bmc = BMCChecker(new_ts);
+        lock.unlock();
         while (true) {
+            logger.log(defines::logPredCP, 1, "PredCP: check at {}, with pred size: {}", at, preds.size(at));
             while (preds.size(at) == 0) {
                 auto lck = std::unique_lock(mutexes[at]);
                 cvs[at].wait(lck);
@@ -45,15 +48,17 @@ namespace wamcer {
     }
 
     bool PredCP::prove(int at) {
-        if (at >= max_step) {
+        if (at > max_step) {
             return false;
         }
         while (at > cur_step) {
             auto lck = std::unique_lock(prove_wait_mux);
             prove_wait_cv.wait(lck);
         }
+        auto lock = std::unique_lock<std::mutex>(global_mux);
         auto new_ts = TransitionSystem::copy(ts);
         auto prover = InductionProver(new_ts, prop);
+        lock.unlock();
         while (true) {
             {
                 auto lck = std::unique_lock(mutexes[at]);
@@ -78,8 +83,10 @@ namespace wamcer {
     }
 
     void PredCP::propBMC() {
+        auto lock = std::unique_lock<std::mutex>(global_mux);
         auto new_ts = TransitionSystem::copy(ts);
         auto bmc = BMCChecker(new_ts);
+        lock.unlock();
         while (true) {
             if (bmc.check(cur_step + 1, prop)) {
                 logger.log(defines::logPredCP, 1, "propBMC: prop is checked safe at {} step", cur_step + 1);
@@ -93,12 +100,12 @@ namespace wamcer {
         }
     }
 
-    void PredCP::insert(const smt::TermVec& terms, int at) {
+    void PredCP::insert(const smt::TermVec &terms, int at) {
         preds.insert(terms, at);
         cvs[at].notify_all();
     }
 
-    void PredCP::insert(AsyncTermSet& terms, int at) {
+    void PredCP::insert(AsyncTermSet &terms, int at) {
         terms.map([&](const smt::Term &t) {
             preds.insert({t}, at);
         });
