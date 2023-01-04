@@ -36,7 +36,7 @@ TEST(RunnerTests, runBMCWithKInduction) {
 
 TEST(RunnerTests, runFBMCWithKInductionTrue) {
     logger.set_verbosity(1);
-    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/goel/opensource/h_RCU/h_RCU.btor2";
+    auto path = "../../btors/buffer.btor2";
     auto res = Runner::runFBMCWithKInduction(path, BTOR2Encoder::decoder, []() -> auto {
         return SolverFactory::boolectorSolver();
     }, -1, 1, 1, 30);
@@ -46,7 +46,7 @@ TEST(RunnerTests, runFBMCWithKInductionTrue) {
 
 TEST(RunnerTests, runBMCWithFolder) {
     logger.set_verbosity(2);
-    auto path = "../../btors/memory.btor2";
+    auto path = "../../btors/buffer.btor2";
     auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decoder, []() {
         return SolverFactory::boolectorSolver();
     }, 100, 5, 2);

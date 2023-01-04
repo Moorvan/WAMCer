@@ -15,7 +15,7 @@ add_executable( wamcerTests
         runner_test.cpp
         cases_test.cpp
         cases/counter.cpp
-        hwmcc_test.cpp)
+        hwmcc_test.cpp learning_test.cpp)
 
 target_link_libraries( wamcerTests
         gtest_main

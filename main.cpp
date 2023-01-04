@@ -41,7 +41,15 @@ int main(int argc, char *argv[]) {
     });
 
     auto checker = BMCChecker(ts);
-    if (checker.check(10, prop)) {
+    auto check = [&](const Term& t, int bound) -> bool {
+        for (auto i = 0; i < bound; ++i) {
+            if (!checker.check(i, t)) {
+                return false;
+            }
+        }
+        return true;
+    };
+    if (check(prop, 20)) {
         logger.log(0, "safe");
     } else {
         logger.log(0, "unsafe");
