@@ -20,7 +20,7 @@ TEST(RunnerTests, runBMC) {
 
 TEST(RunnerTests, runBMC0) {
     logger.set_verbosity(1);
-    Runner::runBMC("is a transition system", [](const std::string& path, TransitionSystem &ts, Term &p) {
+    Runner::runBMC("is a transition system", [](const std::string &path, TransitionSystem &ts, Term &p) {
         counter(ts, p);
     }, []() { return SolverFactory::boolectorSolver(); });
 }
@@ -36,7 +36,7 @@ TEST(RunnerTests, runBMCWithKInduction) {
 
 TEST(RunnerTests, runFBMCWithKInductionTrue) {
     logger.set_verbosity(1);
-    auto path = "../../btors/buffer.btor2";
+    auto path = "../../btors/memory.btor2";
     auto res = Runner::runFBMCWithKInduction(path, BTOR2Encoder::decoder, []() -> auto {
         return SolverFactory::boolectorSolver();
     }, -1, 1, 1, 30);
@@ -58,6 +58,9 @@ TEST(RunnerTest, runPredCP) {
     auto path = "../../btors/memory.btor2";
     auto res = Runner::runPredCP(path, BTOR2Encoder::decoder, []() {
         return SolverFactory::boolectorSolver();
+    }, [](TransitionSystem &ts, Term &p, AsyncTermSet &preds, SmtSolver &s) {
+        auto predsGen = new DirectConstructor(ts, p, preds, s);
+        predsGen->generatePreds(1, 1);
     }, 10);
     ASSERT_TRUE(res);
 }

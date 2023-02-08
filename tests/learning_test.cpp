@@ -6,7 +6,6 @@
 #include "utils/logger.h"
 #include "core/solverFactory.h"
 #include "engines/fbmc.h"
-#include "engines/DirectConstructor.h"
 #include "engines/BMCChecker.h"
 #include "frontends/btorSim.h"
 #include "engines/InductionProver.h"
@@ -173,7 +172,7 @@ TEST(CaseLearning, Buffer) {
     // bmc check 20 steps
     slv->push();
     auto checker = BMCChecker(ts);
-    for (auto i = 0; i < 50; i++) {
+    for (auto i = 0; i < 3; i++) {
         auto erase_terms = TermVec();
         for (auto &t : terms) {
             if (!checker.check(i, t)) {

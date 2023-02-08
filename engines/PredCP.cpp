@@ -55,10 +55,11 @@ namespace wamcer {
             auto lck = std::unique_lock(prove_wait_mux);
             prove_wait_cv.wait(lck);
         }
-        auto lock = std::unique_lock<std::mutex>(global_mux);
+        auto lock = std::unique_lock(global_mux);
         auto new_ts = TransitionSystem::copy(ts);
         auto prover = InductionProver(new_ts, prop);
         lock.unlock();
+        auto p = slv->make_term(true);
         while (true) {
             {
                 auto lck = std::unique_lock(mutexes[at]);
@@ -66,7 +67,7 @@ namespace wamcer {
                     cvs[at].wait(lck);
                 }
             }
-            auto p = Term();
+            logger.log(defines::logPredCP, 1, "PredCP: prove at {}, with pred size: {}", at, preds.size(at));
             p = preds.reduce([&](const smt::Term &t1, const smt::Term &t2) -> smt::Term {
                 return slv->make_term(smt::And, t1, t2);
             }, p, at);

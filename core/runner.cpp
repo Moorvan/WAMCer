@@ -234,6 +234,7 @@ namespace wamcer {
     Runner::runPredCP(std::string path,
                       const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                       const std::function<smt::SmtSolver()> &solverFactory,
+                      const std::function<void(TransitionSystem&, Term&, AsyncTermSet&, SmtSolver&)>& gen,
                       int bound) {
         logger.log(defines::logPredCP, 0, "file: {}", path);
         auto s = solverFactory();
@@ -242,10 +243,11 @@ namespace wamcer {
         decoder(path, ts, p);
         auto predCP = PredCP(ts, p, bound);
 
-        // pred generation
+        // pred generation: preds in s
         auto preds = AsyncTermSet();
-        auto predsGen = new DirectConstructor(ts, p, preds, s);
-        predsGen->generatePreds();
+//        auto predsGen = new DirectConstructor(ts, p, preds, s);
+//        predsGen->generatePreds();
+        gen(ts, p, preds, s);
         logger.log(defines::logPredCP, 1, "Predicates size: {}.", preds.size());
 
         predCP.insert(preds, 0);

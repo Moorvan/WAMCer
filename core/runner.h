@@ -52,6 +52,7 @@ namespace wamcer {
         runPredCP(std::string path,
                   const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                   const std::function<smt::SmtSolver()> &solverFactory,
+                  const std::function<void(TransitionSystem&, Term&, AsyncTermSet&, SmtSolver&)>& gen,
                   int bound = -1);
 
     private:
