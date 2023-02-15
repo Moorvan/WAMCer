@@ -229,7 +229,6 @@ namespace wamcer {
         }
     }
 
-    // There are bugs in the solver's data for concurrent access.
     bool
     Runner::runPredCP(std::string path,
                       const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
@@ -245,16 +244,21 @@ namespace wamcer {
 
         // pred generation: preds in s
         auto preds = AsyncTermSet();
-//        auto predsGen = new DirectConstructor(ts, p, preds, s);
-//        predsGen->generatePreds();
         gen(ts, p, preds, s);
         logger.log(defines::logPredCP, 1, "Predicates size: {}.", preds.size());
 
         predCP.insert(preds, 0);
-        auto threads = std::vector<std::thread>();
+        auto threads = std::vector<std::thread>(); // 2 * bound + 1 threads
+
+        // finished
+        auto result = std::atomic(true);
+        auto finished_mux = std::mutex();
+        auto finished = std::condition_variable();
 
         auto t1 = std::thread([&] {
             predCP.propBMC();
+            result = false;
+            finished.notify_all();
         });
         threads.push_back(std::move(t1));
 
@@ -269,14 +273,19 @@ namespace wamcer {
         for (int i = 1; i <= bound; ++i) {
             threads.emplace_back([&](int i) {
                 predCP.prove(i);
+                finished.notify_all();
             }, i);
         }
 
         for (auto &t: threads) {
-            t.join();
+            t.detach();
+        }
+        {
+            auto lck = std::unique_lock(finished_mux);
+            finished.wait(lck);
         }
 
-        return false;
+        return result;
     }
 
     bool Runner::checkInv(std::string path,

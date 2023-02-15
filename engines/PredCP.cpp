@@ -19,6 +19,7 @@ namespace wamcer {
     }
 
     bool PredCP::check(int at) {
+        // at 可变，或者多个，当 wait 的时候，就去做别的
         if (at >= max_step) {
             return false;
         }
