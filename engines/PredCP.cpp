@@ -14,7 +14,8 @@ namespace wamcer {
             max_step(max_step),
             preds(max_step + 1),
             mutexes(max_step + 1),
-            cvs(max_step + 1) {
+            cvs(max_step + 1),
+            preds_size(max_step + 1) {
         cur_step = -1;
     }
 
@@ -76,10 +77,10 @@ namespace wamcer {
                 continue;
             }
             if (prover.prove(at, p)) {
-                logger.log(defines::logPredCP, 0, "prove: {} is proved to be {} step invariant.", p, at);
+                logger.log(defines::logPredCP, 0, "prove: {} ({} preds) is proved to be {} step invariant.", p, preds_size[at], at);
                 return true;
             } else {
-                logger.log(defines::logPredCP, 1, "prove: one term is not proved to be {} step invariant.", at);
+                logger.log(defines::logPredCP, 1, "prove: terms is not proved to be {} step invariant.", at);
             }
         }
     }
@@ -104,6 +105,7 @@ namespace wamcer {
 
     void PredCP::insert(const smt::TermVec &terms, int at) {
         preds.insert(terms, at);
+        preds_size[at] += terms.size();
         cvs[at].notify_all();
     }
 
@@ -111,6 +113,7 @@ namespace wamcer {
         terms.map([&](const smt::Term &t) {
             preds.insert({t}, at);
         });
+        preds_size[at] += terms.size();
         cvs[at].notify_all();
     }
 

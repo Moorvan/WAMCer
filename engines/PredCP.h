@@ -42,6 +42,7 @@ namespace wamcer {
         AsyncPreds preds;
         int max_step;
         std::atomic<int> cur_step;
+        std::vector<int> preds_size;
     };
 }
 
