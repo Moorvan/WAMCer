@@ -250,7 +250,7 @@ namespace wamcer {
     }
 
 
-    void TransitionSystem::name_term(const string& name, const Term &t) {
+    void TransitionSystem::name_term(const string &name, const Term &t) {
         auto it = named_terms_.find(name);
         if (it != named_terms_.end() && t != it->second) {
             throw PonoException("Name " + name + " has already been used.");
@@ -260,13 +260,13 @@ namespace wamcer {
         term_to_name_[t] = name;
     }
 
-    Term TransitionSystem::make_inputvar(const string& name, const Sort &sort) {
+    Term TransitionSystem::make_inputvar(const string &name, const Sort &sort) {
         Term input = solver_->make_symbol(name, sort);
         add_inputvar(input);
         return input;
     }
 
-    Term TransitionSystem::make_statevar(const string& name, const Sort &sort) {
+    Term TransitionSystem::make_statevar(const string &name, const Sort &sort) {
         // set to false until there is a next state update for this statevar
         deterministic_ = false;
 
@@ -307,7 +307,7 @@ namespace wamcer {
         return t->to_string();
     }
 
-    smt::Term TransitionSystem::lookup(const std::string& name) const {
+    smt::Term TransitionSystem::lookup(const std::string &name) const {
         const auto &it = named_terms_.find(name);
         if (it == named_terms_.end()) {
             throw PonoException("Could not find term named: " + name);
@@ -377,7 +377,7 @@ namespace wamcer {
 
 // term building methods -- forwards to SmtSolver solver_
 
-    Sort TransitionSystem::make_sort(const std::string& name, uint64_t arity) {
+    Sort TransitionSystem::make_sort(const std::string &name, uint64_t arity) {
         return solver_->make_sort(name, arity);
     }
 
@@ -416,7 +416,7 @@ namespace wamcer {
         return solver_->make_term(i, sort);
     }
 
-    Term TransitionSystem::make_term(const std::string& val,
+    Term TransitionSystem::make_term(const std::string &val,
                                      const Sort &sort,
                                      uint64_t base) {
         return solver_->make_term(val, sort, base);
@@ -544,7 +544,7 @@ namespace wamcer {
 // protected methods
 
     bool TransitionSystem::contains(const Term &term,
-                                    const UnorderedTermSetPtrVec& term_sets) const {
+                                    const UnorderedTermSetPtrVec &term_sets) const {
         UnorderedTermSet visited;
         TermVec to_visit{term};
         Term t;
@@ -718,7 +718,7 @@ namespace wamcer {
         return {other_ts, tt};
     }
 
-    smt::Term TransitionSystem::add_term(const smt::Term& t) {
+    smt::Term TransitionSystem::add_term(const smt::Term &t) {
         auto tt = TermTranslator(this->solver_);
         return tt.transfer_term(t);
     }
@@ -729,12 +729,12 @@ namespace wamcer {
 
     void TransitionSystem::convert_no_updates_to_inputs() {
         UnorderedTermSet no_update_statevars;
-        for (const auto& state : statevars_) {
+        for (const auto &state: statevars_) {
             if (state_updates_.find(state) == state_updates_.end()) {
                 no_update_statevars.insert(state);
             }
         }
-        for (const auto& state : no_update_statevars) {
+        for (const auto &state: no_update_statevars) {
             statevars_.erase(state);
             next_statevars_.erase(next_map_.at(state));
             curr_map_.erase(next_map_.at(state));
@@ -745,16 +745,43 @@ namespace wamcer {
 
     std::unordered_map<std::string, smt::Term> TransitionSystem::get_string_to_vars() const {
         auto mp = std::unordered_map<std::string, smt::Term>();
-        for (const auto& state : statevars_) {
+        for (const auto &state: statevars_) {
             mp[state->to_string()] = state;
         }
-        for (const auto& input : inputvars_) {
+        for (const auto &input: inputvars_) {
             mp[input->to_string()] = input;
         }
-        for (const auto& next : next_statevars_) {
+        for (const auto &next: next_statevars_) {
             mp[next->to_string()] = next;
         }
         return mp;
+    }
+
+    void TransitionSystem::add_constraints_into_trans(TransitionSystem &ts, smt::Term &prop) {
+        auto constraints = TermVec();
+        for (const auto &c: ts.constraints()) {
+            constraints.push_back(c.first);
+            logger.log(1, "Adding constraint into transition system: {}", c.first->to_string());
+        }
+        if (!constraints.empty()) {
+            auto v = ts.solver()->make_symbol("var_constraint", ts.solver()->make_sort(BOOL));
+            auto v_next = ts.solver()->make_symbol("var_constraint_next", ts.solver()->make_sort(BOOL));
+            ts.add_statevar(v, v_next);
+            // 就是加一个辅助状态变量v（初值为0），它的更新关系就是如果某一周期 constraint 不成立就变成1，检查的性质调整成 ((v=0 && constraint) ⇒ 原性质) 就可以了
+            // if (constraint = false) then v = 1 else v = v
+            auto constraint = Term();
+            if (constraints.size() == 1) {
+                constraint = constraints[0];
+            } else {
+                constraint = ts.solver()->make_term(And, constraints);
+            }
+            auto v_update = ts.make_term(Ite, constraint, v, ts.make_term(1, v->get_sort()));
+            ts.assign_next(v, v_update);
+            ts.add_init(ts.make_term(Equal, v, ts.make_term(0, v->get_sort())));
+            // v=0 && constraint
+            auto constraint_with_v = ts.make_term(And, ts.make_term(Equal, v, ts.make_term(0, v->get_sort())), constraint);
+            prop = ts.make_term(Implies, constraint_with_v, prop);
+        }
     }
 
 }  // namespace pono

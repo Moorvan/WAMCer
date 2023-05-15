@@ -21,6 +21,7 @@
 #include "smt-switch/boolector_factory.h"
 #include "smt-switch/smt.h"
 #include "utils/exceptions.h"
+#include "utils/logger.h"
 
 namespace wamcer {
 
@@ -56,6 +57,8 @@ namespace wamcer {
         TransitionSystem(const TransitionSystem &other_ts, smt::TermTranslator &tt);
 
         static TransitionSystem copy(const TransitionSystem &other_ts);
+
+        static void add_constraints_into_trans(TransitionSystem &ts, smt::Term& prop);
 
         smt::Term add_term(const smt::Term& term);
 

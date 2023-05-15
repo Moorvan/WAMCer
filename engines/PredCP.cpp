@@ -19,13 +19,12 @@ namespace wamcer {
         cur_step = -1;
     }
 
-    bool PredCP::check(int at) {
+    bool PredCP::check(int at, TransitionSystem& new_ts) {
         // at 可变，或者多个，当 wait 的时候，就去做别的
         if (at >= max_step) {
             return false;
         }
         auto lock = std::unique_lock<std::mutex>(global_mux);
-        auto new_ts = TransitionSystem::copy(ts);
         auto bmc = BMCChecker(new_ts);
         lock.unlock();
         while (true) {
@@ -41,6 +40,7 @@ namespace wamcer {
             }
             if (bmc.check(at, p)) {
                 preds.insert({p}, at + 1);
+                preds_size[at + 1]++;
                 cvs[at + 1].notify_all();
                 logger.log(defines::logPredCP, 1, "check: one term checked in at step {}", at);
             } else {
@@ -49,7 +49,7 @@ namespace wamcer {
         }
     }
 
-    bool PredCP::prove(int at) {
+    bool PredCP::prove(int at, TransitionSystem& new_ts) {
         if (at > max_step) {
             return false;
         }
@@ -58,18 +58,20 @@ namespace wamcer {
             prove_wait_cv.wait(lck);
         }
         auto lock = std::unique_lock(global_mux);
-        auto new_ts = TransitionSystem::copy(ts);
         auto prover = InductionProver(new_ts, prop);
         lock.unlock();
         auto p = slv->make_term(true);
+        auto first = true;
         while (true) {
             {
                 auto lck = std::unique_lock(mutexes[at]);
-                while (preds.size(at) == 0) {
+                if (!first) {
                     cvs[at].wait(lck);
                 }
+                first = false;
             }
-            logger.log(defines::logPredCP, 1, "PredCP: prove at {}, with pred size: {}", at, preds.size(at));
+            auto size = preds_size[at];
+            logger.log(defines::logPredCP, 1, "PredCP: prove at {}, with pred size: {}", at, size);
             p = preds.reduce([&](const smt::Term &t1, const smt::Term &t2) -> smt::Term {
                 return slv->make_term(smt::And, t1, t2);
             }, p, at);
@@ -77,7 +79,7 @@ namespace wamcer {
                 continue;
             }
             if (prover.prove(at, p)) {
-                logger.log(defines::logPredCP, 0, "prove: {} ({} preds) is proved to be {} step invariant.", p, preds_size[at], at);
+                logger.log(defines::logPredCP, 0, "prove: {} ({} preds) is proved to be {} step invariant.", p, size, at);
                 return true;
             } else {
                 logger.log(defines::logPredCP, 1, "prove: terms is not proved to be {} step invariant.", at);
@@ -85,9 +87,8 @@ namespace wamcer {
         }
     }
 
-    void PredCP::propBMC() {
+    void PredCP::propBMC(TransitionSystem& new_ts) {
         auto lock = std::unique_lock<std::mutex>(global_mux);
-        auto new_ts = TransitionSystem::copy(ts);
         auto bmc = BMCChecker(new_ts);
         lock.unlock();
         while (true) {

@@ -17,11 +17,11 @@ namespace wamcer {
     public:
         PredCP(TransitionSystem &transitionSystem, smt::Term &property, int max_step);
 
-        bool check(int at);
+        bool check(int at, TransitionSystem& new_ts);
 
-        bool prove(int at);
+        bool prove(int at, TransitionSystem& new_ts);
 
-        void propBMC();
+        void propBMC(TransitionSystem& new_ts);
 
         void insert(const smt::TermVec& terms, int at);
 

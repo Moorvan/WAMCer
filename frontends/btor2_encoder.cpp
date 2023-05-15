@@ -1326,5 +1326,9 @@ namespace wamcer {
 //        }
     }
 
+    void BTOR2Encoder::decoder_with_constraint(const string &path, TransitionSystem &transitionSystem, Term &prop) {
+        prop = BTOR2Encoder(path, transitionSystem).prop();
+        TransitionSystem::add_constraints_into_trans(transitionSystem, prop);
+    }
 
 }  // namespace pono

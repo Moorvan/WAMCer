@@ -23,6 +23,10 @@ TEST(CasesTests, Counter) {
     logger.log(defines::logTest, 0, "res = ", res);
 }
 
+TEST(CasesTests, Counter2) {
+
+}
+
 //TEST(FindNoInputCases, noinput) {
 //    auto cnt = 0;
 //    auto okcnt = 0;

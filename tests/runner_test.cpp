@@ -46,21 +46,38 @@ TEST(RunnerTests, runFBMCWithKInductionTrue) {
 
 TEST(RunnerTests, runBMCWithFolder) {
     logger.set_verbosity(2);
-    auto path = "../../btors/buffer.btor2";
-    auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decoder, []() {
+//    auto path = "../../btors/memory.btor2";
+    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/mann/data-integrity/unsafe/arbitrated_top_n4_w16_d16_e0.btor2";
+    auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decoder_with_constraint, []() {
         return SolverFactory::boolectorSolver();
-    }, 100, 5, 2);
+    }, 25, 8, 2);
     ASSERT_TRUE(res);
 }
 
+TEST(RunnerTests, runBMCs) {
+    logger.set_verbosity(2);
+//    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/mann/data-integrity/unsafe/arbitrated_top_n4_w16_d16_e0.btor2";
+    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/mann/data-integrity/unsafe/arbitrated_top_n3_w8_d128_e0.btor2";
+    auto res = Runner::runBMCs(path, BTOR2Encoder::decoder, []() {
+        return SolverFactory::boolectorSolver();
+    }, 26, 8);
+    ASSERT_FALSE(res);
+}
+
+
+
 TEST(RunnerTest, runPredCP) {
     logger.set_verbosity(1);
-    auto path = "../../btors/memory.btor2";
-    auto res = Runner::runPredCP(path, BTOR2Encoder::decoder, []() {
+//    auto path = "../../btors/memory.btor2";
+//    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/wolf/2019C/vgasim_imgfifo-p082.btor";
+    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/goel/industry/mul7/mul7.btor2";
+//    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/wolf/2019C/vgasim_imgfifo-p089.btor";
+//    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/wolf/2018D/zipcpu-zipmmu-p48.btor";
+    auto res = Runner::runPredCP(path, BTOR2Encoder::decoder_with_constraint, []() {
         return SolverFactory::boolectorSolver();
     }, [](TransitionSystem &ts, Term &p, AsyncTermSet &preds, SmtSolver &s) {
         auto predsGen = new DirectConstructor(ts, p, preds, s);
         predsGen->generatePreds(1, 1);
-    }, 10);
+    }, 25);
     ASSERT_TRUE(res);
 }

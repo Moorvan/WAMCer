@@ -15,7 +15,6 @@ namespace wamcer {
         this->trans.resize(2);
         maxTime = 1;
         original_inputs = this->ts.inputvars();
-        original_constraints = this->ts.constraints();
         this->trans[1] = this->ts.trans();
     }
 
@@ -92,13 +91,6 @@ namespace wamcer {
             auto foldTerm = slv->substitute(t, update);
             out.assign_next(kv.first, foldTerm);
         }
-//        for (const auto &kv: in.constraints()) {
-//            out.add_constraint(kv.first, kv.second);
-//            auto t = substituteInput(x, x, kv.first);
-//            out.add_constraint(t, kv.second);
-//            auto foldTerm = slv->substitute(t, update);
-//            out.add_constraint(foldTerm, kv.second);
-//        }
         return out;
     }
 
@@ -123,15 +115,6 @@ namespace wamcer {
             }
         }
 
-//        for (const auto &kv: in1.constraints()) {
-//            auto t = substituteInput(x2, x1, kv.first);
-//            out.add_constraint(t, kv.second);
-//        }
-//        for (const auto &kv: in2.constraints()) {
-//            out.add_constraint(kv.first, kv.second);
-//            auto foldTerm = slv->substitute(kv.first, update);
-//            out.add_constraint(foldTerm, kv.second);
-//        }
         return out;
     }
 
@@ -145,9 +128,6 @@ namespace wamcer {
         for (const auto &v: ts.named_terms()) {
             out.name_term(v.first, v.second);
         }
-//        for (const auto &v: ts.constraints()) {
-//            out.add_constraint(v.first, v.second);
-//        }
     }
 
     smt::Term TransitionFolder::substituteInput(int start, int n, smt::Term in) {

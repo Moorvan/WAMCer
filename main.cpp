@@ -6,18 +6,19 @@
 #include "utils/logger.h"
 #include "frontends/btorSim.h"
 #include "frontends/btor2_encoder.h"
+#include "core/runner.h"
 
 using namespace wamcer;
 using namespace smt;
 using namespace std;
 
 
-int main(int argc, char *argv[]) {
+void simulate() {
     auto parser = cmdline::parser();
     parser.add<string>("btor2", 'b', "btor file path", true);
     parser.add<string>("output", 'o', "output file path", false, "./out.csv");
     parser.add<int>("bound", 'k', "bound of simulation", false, 20);
-    parser.parse_check(argc, argv);
+//    parser.parse_check(argc, argv);
     auto btor2_path = parser.get<string>("btor2");
     auto output_path = parser.get<string>("output");
     auto bound = parser.get<int>("bound");
@@ -33,7 +34,7 @@ int main(int argc, char *argv[]) {
     BTOR2Encoder::decoder(btor2_path, ts, prop);
     auto gen = DirectConstructor(ts, prop, preds, slv);
     gen.generatePreds(1, 0);
-    // print the predse
+    // print the predset
     auto file = std::ofstream("./preds.txt");
     preds.map([&](auto t) {
 //        logger.log(0, "{}", t);
@@ -60,6 +61,25 @@ int main(int argc, char *argv[]) {
     for (auto& [k, v] : mp) {
         logger.log(0, "{} -> {}", k, v);
     }
+}
 
-    return 0;
+int main(int argc, char *argv[]) {
+    logger.set_verbosity(1);
+    auto parser = cmdline::parser();
+    parser.add<string>("btor2", 'b', "btor file path", true);
+    parser.add<int>("bound", 'k', "bound of simulation", false, 25);
+    parser.parse_check(argc, argv);
+    auto btor2_path = parser.get<string>("btor2");
+    auto bound = parser.get<int>("bound");
+    auto res = Runner::runPredCP(btor2_path, BTOR2Encoder::decoder, []() {
+        return SolverFactory::boolectorSolver();
+    }, [](TransitionSystem &ts, Term &p, AsyncTermSet &preds, SmtSolver &s) {
+        auto predsGen = new DirectConstructor(ts, p, preds, s);
+        predsGen->generatePreds(1, 1);
+    }, bound);
+    if (res) {
+        cout << "res: safe" << endl;
+    } else {
+        cout << "res: unsafe" << endl;
+    }
 }

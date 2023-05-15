@@ -67,6 +67,9 @@ namespace wamcer {
 
         static void decoder(const std::string& path, TransitionSystem& transitionSystem, smt::Term& prop);
 
+        // 转码并将 constraints 转入 trans 中
+        static void decoder_with_constraint(const std::string& path, TransitionSystem& transitionSystem, smt::Term& prop);
+
         static void decode_without_constraint(const std::string& path, TransitionSystem& transitionSystem, smt::Term& prop);
 
     protected:

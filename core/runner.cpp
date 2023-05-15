@@ -233,7 +233,7 @@ namespace wamcer {
     Runner::runPredCP(std::string path,
                       const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                       const std::function<smt::SmtSolver()> &solverFactory,
-                      const std::function<void(TransitionSystem&, Term&, AsyncTermSet&, SmtSolver&)>& gen,
+                      const std::function<void(TransitionSystem &, Term &, AsyncTermSet &, SmtSolver &)> &gen,
                       int bound) {
         logger.log(defines::logPredCP, 0, "file: {}", path);
         auto s = solverFactory();
@@ -241,22 +241,28 @@ namespace wamcer {
         auto p = Term();
         decoder(path, ts, p);
         auto predCP = PredCP(ts, p, bound);
-
-        // pred generation: preds in s
-        auto preds = AsyncTermSet();
-        gen(ts, p, preds, s);
-        logger.log(defines::logPredCP, 1, "Predicates size: {}.", preds.size());
-
-        predCP.insert(preds, 0);
         auto threads = std::vector<std::thread>(); // 2 * bound + 1 threads
+
+        auto preds = AsyncTermSet();
+        // pred generation: preds in s
+//        auto new_ts = TransitionSystem::copy(ts);
+//        auto new_s = new_ts.get_solver();
+//        auto to_s = TermTranslator(new_s);
+//        auto pp = to_s.transfer_term(p);
+//        threads.emplace_back([&] {
+//            gen(new_ts, p, preds, s);
+//            logger.log(defines::logPredCP, 1, "Predicates size: {}.", preds.size());
+//            predCP.insert(preds, 0);
+//        });
 
         // finished
         auto result = std::atomic(true);
         auto finished_mux = std::mutex();
         auto finished = std::condition_variable();
 
+        auto new_ts1 = TransitionSystem::copy(ts);
         auto t1 = std::thread([&] {
-            predCP.propBMC();
+            predCP.propBMC(new_ts1);
             result = false;
             finished.notify_all();
         });
@@ -265,16 +271,18 @@ namespace wamcer {
         // pred in pools[k] means that safe in k steps
         // check 0 - bound-1 pools
         for (int i = 0; i < bound; i++) {
-            threads.emplace_back([&](int i) {
-                predCP.check(i);
-            }, i);
+            auto new_ts2 = TransitionSystem::copy(ts);
+            threads.emplace_back([&](int i, TransitionSystem nts) {
+                predCP.check(i, nts);
+            }, i, new_ts2);
         }
         // prove 1 - bound pools
         for (int i = 1; i <= bound; ++i) {
-            threads.emplace_back([&](int i) {
-                predCP.prove(i);
+            auto new_ts3 = TransitionSystem::copy(ts);
+            threads.emplace_back([&](int i, TransitionSystem nts) {
+                predCP.prove(i, nts);
                 finished.notify_all();
-            }, i);
+            }, i, new_ts3);
         }
 
         for (auto &t: threads) {
@@ -306,18 +314,6 @@ namespace wamcer {
                                   int bound,
                                   int foldThread,
                                   int checkThread) {
-        // check if ts has no constraint
-//        {
-//            auto s = solverFactory();
-//            auto ts = TransitionSystem(s);
-//            auto p = Term();
-//            decoder(path, ts, p);
-//            if (!ts.constraints().empty()) {
-//                logger.log(defines::logBMCWithFolderRunner, 0, "ts has constraints, it is not supported yet.");
-//                throw std::runtime_error("ts has constraints, it is not supported yet.");
-//            }
-//        }
-
         const int empty = -1;
         const int success = -2;
 
@@ -472,6 +468,63 @@ namespace wamcer {
         } else {
             logger.log(defines::logBMCWithFolderRunner, 0, "Result: unsafe at {} step", result.second);
             return false;
+        }
+    }
+
+    bool Runner::runBMCs(std::string path, const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                        const std::function<smt::SmtSolver()> &solverFactory,
+                        int bound, int threadCnt) {
+        const int failed = -1;
+        const int success = -2;
+        const int unknown = -3;
+
+        std::atomic<int> result = unknown;
+
+        auto left_steps = std::unordered_set<int>();
+        auto left_steps_mux = std::shared_mutex();
+
+        for (int i = 1; i <= bound; i++) {
+            left_steps.insert(i);
+        }
+
+        auto get_one_step = [&]() -> int {
+            auto lck = std::unique_lock(left_steps_mux);
+            if (left_steps.empty()) {
+                return success;
+            }
+            logger.log(defines::logBMCsRunner, 2, "left steps size: {}", left_steps.size());
+            int it;
+            std::sample(left_steps.begin(), left_steps.end(), &it, 1, std::mt19937{std::random_device{}()});
+            left_steps.erase(it);
+            return it;
+        };
+
+        auto threads = std::vector<std::thread>();
+
+        for (auto i = 0; i < threadCnt; i++) {
+            threads.emplace_back([&] {
+                auto slv = solverFactory();
+                auto ts = TransitionSystem(slv);
+                auto p = Term();
+                decoder(path, ts, p);
+                auto bmc = BMCChecker(ts);
+                auto task_step = get_one_step();
+                if (bmc.check(task_step, p)) {
+                    logger.log(defines::logBMCsRunner, 1, "safe at {} step", task_step);
+                } else {
+                    logger.log(defines::logBMCsRunner, 0, "unsafe at {} step", task_step);
+                    result = failed;
+                }
+            });
+        }
+
+        for (auto &t: threads) {
+            t.join();
+        }
+        if (result == failed) {
+            return false;
+        } else {
+            return true;
         }
     }
 }

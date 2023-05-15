@@ -281,7 +281,7 @@ TEST(TSFold, fold) {
     auto folder = TransitionFolder(ts, folder_slv);
     auto out = Term();
     std::cout << ts.trans()->to_string() << std::endl;
-    folder.getNStepTrans(10, out, to_s);
+    folder.getNStepTrans(2, out, to_s);
     logger.log("[trans]: ", 1, "ts.trans = {}", ts.trans());
     logger.log("[out]: ", 1, "out = {}", out);
 }
@@ -563,15 +563,16 @@ TEST(TSFold, foldBench2) {
 }
 
 TEST(TSFold, BMC) {
+    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/mann/data-integrity/unsafe/arbitrated_top_n4_w16_d16_e0.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
 //    BTOR2Encoder::decoder(path, ts, p);
 //    logger.log(0, "prop: {}", p);
-    auto encoder = BTOR2Encoder(path, ts, true);
+    auto encoder = BTOR2Encoder(path, ts);
     p = encoder.prop();
-    ts.add_init(encoder.constraint());
-    p = ts.make_term(Implies, encoder.constraint(), p);
+//    ts.add_init(encoder.constraint());
+//    p = ts.make_term(Implies, encoder.constraint(), p);
 //    ts.convert_no_updates_to_inputs();
     auto bmc = BMCChecker(ts);
 //    logger.log(0, "prop: {}", p);
@@ -585,6 +586,29 @@ TEST(TSFold, BMC) {
         }
     };
     for (auto i = 0; i < 100; i++) {
+        f(i);
+    }
+}
+
+TEST(TSFold, BMC_in_constraints) {
+    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/mann/data-integrity/unsafe/arbitrated_top_n4_w16_d16_e0.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    auto p = Term();
+    BTOR2Encoder::decoder_with_constraint(path, ts, p);
+//    ts.convert_no_updates_to_inputs();
+    auto bmc = BMCChecker(ts);
+//    logger.log(0, "prop: {}", p);
+    logger.log(0, "constraints size: {}", ts.constraints().size());
+    auto f = [&](int i) {
+        if (bmc.check(i, p)) {
+            logger.log(0, "bmc pass in {} step.", i);
+        } else {
+            logger.log(0, "bmc unpass at {} step", i);
+            exit(1);
+        }
+    };
+    for (auto i = 0; i < 50; i++) {
         f(i);
     }
 }

@@ -28,6 +28,8 @@ namespace wamcer {
         auto notTn = slv->make_term(smt::Not, unroller.at_time(tt, at));
         slv->assert_formula(notTn);
         auto added = false;
+        auto core = smt::TermVec();
+        // todo: construct core terms
         do {
             if (slv->check_sat().is_unsat()) {
                 return true;

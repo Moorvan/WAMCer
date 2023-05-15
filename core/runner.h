@@ -48,6 +48,10 @@ namespace wamcer {
                                      const std::function<smt::SmtSolver()> &solverFactory,
                                      int bound = -1, int foldThread = 1, int checkThread = 2);
 
+        static bool runBMCs(std::string path, const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                            const std::function<smt::SmtSolver()> &solverFactory,
+                            int bound = -1, int threadCnt = 8);
+
         static bool
         runPredCP(std::string path,
                   const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
