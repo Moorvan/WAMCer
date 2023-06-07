@@ -85,10 +85,16 @@ void simulate() {
  */
 
 int main(int argc, char *argv[]) {
+    using namespace std;
     logger.set_verbosity(2);
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
-    auto res = Runner::runBMCs(path, BTOR2Encoder::decoder, []() {
-        return SolverFactory::boolectorSolver();
-    }, 15, 5);
-//    ASSERT_FALSE(res);
+    auto btors = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/files.txt";
+    // read lines in file btors
+    ifstream ifs(btors);
+    string line;
+    while (getline(ifs, line)) {
+        auto res = Runner::runBMCs(line, BTOR2Encoder::decoder, []() {
+            return SolverFactory::boolectorSolver();
+        }, 15, 5);
+    }
+    ifs.close();
 }
