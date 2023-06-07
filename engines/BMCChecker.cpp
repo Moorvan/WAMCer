@@ -24,6 +24,7 @@ namespace wamcer {
         }
     }
 
+    // at >= 0
     bool BMCChecker::check(int at, const smt::Term& t) {
         if (at > step) {
             growTo(at);

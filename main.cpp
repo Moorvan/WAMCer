@@ -63,7 +63,7 @@ void simulate() {
     }
 }
 
-int main(int argc, char *argv[]) {
+/** main
     logger.set_verbosity(1);
     auto parser = cmdline::parser();
     parser.add<string>("btor2", 'b', "btor file path", true);
@@ -82,4 +82,13 @@ int main(int argc, char *argv[]) {
     } else {
         cout << "res: unsafe" << endl;
     }
+ */
+
+int main(int argc, char *argv[]) {
+    logger.set_verbosity(2);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
+    auto res = Runner::runBMCs(path, BTOR2Encoder::decoder, []() {
+        return SolverFactory::boolectorSolver();
+    }, 15, 5);
+//    ASSERT_FALSE(res);
 }

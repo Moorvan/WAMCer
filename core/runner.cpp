@@ -480,11 +480,11 @@ namespace wamcer {
 
         std::atomic<int> result = unknown;
 
-        auto left_steps = std::unordered_set<int>();
+        auto left_steps = std::list<int>();
         auto left_steps_mux = std::shared_mutex();
 
-        for (int i = 1; i <= bound; i++) {
-            left_steps.insert(i);
+        for (int i = 0; i <= bound; i++) {
+            left_steps.push_back(i);
         }
 
         auto get_one_step = [&]() -> int {
@@ -493,9 +493,8 @@ namespace wamcer {
                 return success;
             }
             logger.log(defines::logBMCsRunner, 2, "left steps size: {}", left_steps.size());
-            int it;
-            std::sample(left_steps.begin(), left_steps.end(), &it, 1, std::mt19937{std::random_device{}()});
-            left_steps.erase(it);
+            auto it = left_steps.back();
+            left_steps.pop_back();
             return it;
         };
 
@@ -508,12 +507,17 @@ namespace wamcer {
                 auto p = Term();
                 decoder(path, ts, p);
                 auto bmc = BMCChecker(ts);
-                auto task_step = get_one_step();
-                if (bmc.check(task_step, p)) {
-                    logger.log(defines::logBMCsRunner, 1, "safe at {} step", task_step);
-                } else {
-                    logger.log(defines::logBMCsRunner, 0, "unsafe at {} step", task_step);
-                    result = failed;
+                while (true) {
+                    auto task_step = get_one_step();
+                    if (task_step == success) {
+                        break;
+                    }
+                    if (bmc.check(task_step, p)) {
+                        logger.log(defines::logBMCsRunner, 1, "safe at {} step", task_step);
+                    } else {
+                        logger.log(defines::logBMCsRunner, 0, "unsafe at {} step", task_step);
+                        result = failed;
+                    }
                 }
             });
         }
