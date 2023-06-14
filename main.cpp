@@ -42,7 +42,7 @@ void simulate() {
     });
 
     auto checker = BMCChecker(ts);
-    auto check = [&](const Term& t, int bound) -> bool {
+    auto check = [&](const Term &t, int bound) -> bool {
         for (auto i = 0; i < bound; ++i) {
             if (!checker.check(i, t)) {
                 return false;
@@ -58,12 +58,12 @@ void simulate() {
 
     // get map[string -> term]
     auto mp = ts.get_string_to_vars();
-    for (auto& [k, v] : mp) {
+    for (auto &[k, v]: mp) {
         logger.log(0, "{} -> {}", k, v);
     }
 }
 
-/** main
+/* main
     logger.set_verbosity(1);
     auto parser = cmdline::parser();
     parser.add<string>("btor2", 'b', "btor file path", true);
@@ -84,8 +84,8 @@ void simulate() {
     }
  */
 
-int main(int argc, char *argv[]) {
-    using namespace std;
+/* run all
+ * using namespace std;
     logger.set_verbosity(2);
     auto btors = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/files.txt";
     // read lines in file btors
@@ -97,4 +97,20 @@ int main(int argc, char *argv[]) {
         }, 15, 5);
     }
     ifs.close();
+ */
+
+int main(int argc, char *argv[]) {
+    auto parser = cmdline::parser();
+    parser.add<string>("btor2", 'b', "btor file path", true);
+    parser.parse_check(argc, argv);
+    auto btor2_path = parser.get<string>("btor2");
+    logger.set_verbosity(2);
+    auto res = Runner::runBMCs(btor2_path, BTOR2Encoder::decoder, []() {
+        return SolverFactory::boolectorSolver();
+    }, 15, 5);
+    if (res) {
+        cout << "res: safe" << endl;
+    } else {
+        cout << "res: unsafe" << endl;
+    }
 }
