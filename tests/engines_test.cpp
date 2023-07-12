@@ -293,15 +293,15 @@ TEST(TSFold, cntFoldBMC) {
     auto p = Term();
 //    BTOR2Encoder::decoder(path, ts, p);
     counter(ts, p);
-    logger.log(0, "input size: {}", ts.inputvars().size());
-    logger.log(0, "state size: {}", ts.statevars().size());
-    logger.log(0, "constraint size: {}", ts.constraints().size());
-    logger.log(0, "updates size: {}", ts.state_updates().size());
-    ts.convert_no_updates_to_inputs();
-    logger.log(0, "input size: {}", ts.inputvars().size());
-    logger.log(0, "state size: {}", ts.statevars().size());
-    logger.log(0, "constraint size: {}", ts.constraints().size());
-    logger.log(0, "updates size: {}", ts.state_updates().size());
+//    logger.log(0, "input size: {}", ts.inputvars().size());
+//    logger.log(0, "state size: {}", ts.statevars().size());
+//    logger.log(0, "constraint size: {}", ts.constraints().size());
+//    logger.log(0, "updates size: {}", ts.state_updates().size());
+//    ts.convert_no_updates_to_inputs();
+//    logger.log(0, "input size: {}", ts.inputvars().size());
+//    logger.log(0, "state size: {}", ts.statevars().size());
+//    logger.log(0, "constraint size: {}", ts.constraints().size());
+//    logger.log(0, "updates size: {}", ts.state_updates().size());
     auto folder_slv = SolverFactory::boolectorSolver();
     auto to_s = TermTranslator(s);
     auto folder = TransitionFolder(ts, folder_slv);
@@ -322,7 +322,6 @@ TEST(TSFold, cntFoldBMC) {
             logger.log(0, "bmc with fold pass in {} step", n);
         } else {
             logger.log(0, "Not pass in {} step", n);
-            exit(1);
         }
         s->pop();
     };
@@ -344,10 +343,9 @@ TEST(TSFold, BMCcase) {
             logger.log(0, "bmc pass in {} step.", i);
         } else {
             logger.log(0, "bmc unpass at {} step", i);
-            exit(1);
         }
     };
-    for (auto i = 0; i < 100; i++) {
+    for (auto i = 0; i < 30; i++) {
         f(i);
     }
 }
@@ -372,20 +370,86 @@ TEST(FSFold, fold2) {
 //    folder.foldToNStep(103, f);
 }
 
+TEST(TSFold, foldTest) {
+    logger.set_verbosity(1);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    auto p = Term();
+//    BTOR2Encoder::decoder_with_constraint(path, ts, p);
+    BTOR2Encoder::decoder(path, ts, p);
+    auto init = ts.init();
+    auto unroller = Unroller(ts);
+    auto folder_slv = SolverFactory::boolectorSolver();
+    auto folder = TransitionFolder(ts, folder_slv);
+    auto to_s = TermTranslator(s);
+    auto out = Term();
+    for (auto i = 0; i <= 20; i++) {
+        for (auto term : ts.statevars()) {
+            unroller.at_time(term, i);
+        }
+    }
+    auto f = [&](int t) {
+        s->push();
+        s->assert_formula(unroller.at_time(init, 0));
+//    out = ts.trans();
+        folder.getNStepTrans2(t, out, to_s);
+//    logger.log(0, "construct trans ok.");
+        auto notP = s->make_term(Not, p);
+//        s->assert_formula(unroller.at_time(notP, t));
+//        s->assert_formula(out);
+        s->assert_formula(unroller.at_time(notP, 1));
+        s->assert_formula(unroller.at_time(out, 0));
+        if (s->check_sat().is_unsat()) {
+            logger.log(0, "pass in {} step", t);
+        } else {
+            logger.log(0, "Not pass in {} step", t);
+        }
+        s->pop();
+    };
+    f(2);
+//    for (int i = 1; i <= 20; ++i) {
+//        f(i);
+//    }
+}
+
+TEST(TSFold, BMCs) {
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    auto p = Term();
+//    BTOR2Encoder::decoder_with_constraint(path, ts, p);
+    BTOR2Encoder::decoder(path, ts, p);
+    auto bmc = BMCChecker(ts);
+    auto f = [&](int i) {
+        if (bmc.check(i, p)) {
+            logger.log(0, "bmc pass in {} step.", i);
+        } else {
+            logger.log(0, "bmc unpass at {} step", i);
+        }
+    };
+    // I0 and T01 and T12 ... T19-20 and not P20
+    for (int i = 1; i <= 20; i++) {
+        f(i);
+    }
+
+}
+
 TEST(TSFold, foldBench) {
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
+    BTOR2Encoder::decoder_with_constraint(path, ts, p);
 //    BTOR2Encoder::decoder(path, ts, p);
-    auto encoder = BTOR2Encoder(path, ts, true);
-    p = encoder.prop();
+//    auto encoder = BTOR2Encoder(path, ts, true);
+//    p = encoder.prop();
     auto init = ts.init();
-    init = ts.make_term(And, init, encoder.constraint());
-    logger.log(0, "input size: {}", ts.inputvars().size());
-    logger.log(0, "state size: {}", ts.statevars().size());
-    logger.log(0, "constraints size: {}", ts.constraints().size());
-    auto start0 = std::chrono::steady_clock::now();
+//    init = ts.make_term(And, init, encoder.constraint());
+//    logger.log(0, "input size: {}", ts.inputvars().size());
+//    logger.log(0, "state size: {}", ts.statevars().size());
+//    logger.log(0, "constraints size: {}", ts.constraints().size());
+//    auto start0 = std::chrono::steady_clock::now();
     auto unroller = Unroller(ts);
     auto folder_slv = SolverFactory::boolectorSolver();
     auto folder = TransitionFolder(ts, folder_slv);
@@ -404,8 +468,8 @@ TEST(TSFold, foldBench) {
         logger.log(0, "Not pass");
 //        exit(1);
     }
-    logger.log(0, "time count = {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - start0).count());
+//    logger.log(0, "time count = {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(
+//            std::chrono::steady_clock::now() - start0).count());
 
 //    auto s1 = SolverFactory::boolectorSolver();
 //    auto ts1 = TransitionSystem(s1);

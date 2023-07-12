@@ -17,6 +17,8 @@ namespace wamcer {
 
         void getNStepTrans(int n, smt::Term &out_trans, smt::TermTranslator &translator);
 
+        void getNStepTrans2(int n, smt::Term &out_trans, smt::TermTranslator &translator);
+
         void foldToNStep(int n,  const std::function<void(int, const smt::Term &)>& add_trans);
 
     private:
@@ -26,12 +28,17 @@ namespace wamcer {
         smt::TermTranslator to_slv;
         smt::UnorderedTermMap updates;
         smt::UnorderedTermSet original_inputs;
+        Unroller unroller;
 
         int maxTime;
 
         TransitionSystem fold(const TransitionSystem &in, int x);
 
+//        TransitionSystem fold2(const TransitionSystem &in, int x);
+
         TransitionSystem add(const TransitionSystem &in1, const TransitionSystem &in2, int x1, int x2);
+
+//        TransitionSystem add2(const TransitionSystem &in1, const TransitionSystem &in2, int x1, int x2);
 
         void newTS(TransitionSystem &out);
 

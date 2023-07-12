@@ -104,10 +104,10 @@ int main(int argc, char *argv[]) {
     parser.add<string>("btor2", 'b', "btor file path", true);
     parser.parse_check(argc, argv);
     auto btor2_path = parser.get<string>("btor2");
-    logger.set_verbosity(2);
+//    logger.set_verbosity(2);
     auto res = Runner::runBMCs(btor2_path, BTOR2Encoder::decoder, []() {
         return SolverFactory::boolectorSolver();
-    }, 15, 5);
+    }, 20, 5);
     if (res) {
         cout << "res: safe" << endl;
     } else {

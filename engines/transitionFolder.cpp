@@ -9,7 +9,7 @@
 namespace wamcer {
 
     TransitionFolder::TransitionFolder(TransitionSystem &ts, const smt::SmtSolver &folderSolver)
-            : slv(folderSolver), to_slv(folderSolver), ts(folderSolver) {
+            : slv(folderSolver), to_slv(folderSolver), ts(folderSolver), unroller(this->ts){
         this->ts = TransitionSystem(ts, to_slv);
         updates = this->ts.state_updates();
         this->trans.resize(2);
@@ -49,6 +49,35 @@ namespace wamcer {
         }
         trans_out = translator.transfer_term(out.trans());
     }
+
+    // n >= 1
+    void TransitionFolder::getNStepTrans2(int n, smt::Term &out_trans, smt::TermTranslator &translator) {
+//        auto trans = ts.trans();
+//        out_trans = unroller.at_time(trans, 0);
+//        for (int i = 1; i < n; i++) {
+//            out_trans = slv->make_term(smt::And, out_trans, unroller.at_time(trans, i));
+//        }
+//        out_trans = translator.transfer_term(out_trans);
+
+        auto out = TransitionSystem(slv);
+        newTS(out);
+        auto update = ts.state_updates();
+        for (auto &kv: update) {
+            out.assign_next(kv.first, kv.second);
+        }
+        for (int i = 1; i < n; i++) {
+            auto x = TransitionSystem(slv);
+            newTS(x);
+            for (auto &kv: out.state_updates()) {
+                auto foldTerm = slv->substitute(kv.second, update);
+                x.assign_next(kv.first, foldTerm);
+            }
+            out = x;
+        }
+        out_trans = translator.transfer_term(out.trans());
+    }
+
+
 
     void TransitionFolder::foldToNStep(int n, const std::function<void(int, const smt::Term &)> &add_trans) {
         auto out = TransitionSystem(slv);
