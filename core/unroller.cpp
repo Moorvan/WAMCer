@@ -46,9 +46,23 @@ namespace wamcer {
         return solver_->substitute(t, cache);
     }
 
+    smt::Term Unroller::move_time(const smt::Term &t, int l0, int r0, int l1, int r1) {
+        assert(r0 - l0 == r1 - l1);
+        auto len = r0 - l0;
+        UnorderedTermMap mp = UnorderedTermMap();
+        for (auto i = 0; i <= len; i++) {
+            auto lcache = var_cache_at_time(l0 + i);
+            auto rcache = var_cache_at_time(l1 + i);
+            for (auto &kv: lcache) {
+                mp[kv.second] = rcache[kv.first];
+            }
+        }
+        return solver_->substitute(t, mp);
+    }
+
     Term Unroller::untime(const Term &t) const {
         auto symbol_untime = UnorderedTermMap();
-        for (auto kv : untime_cache_) {
+        for (auto kv: untime_cache_) {
             if (kv.first->is_symbol()) {
                 symbol_untime[kv.first] = kv.second;
             }
@@ -102,7 +116,7 @@ namespace wamcer {
         try {
             timed_v = solver_->make_symbol(name, v->get_sort());
         } catch (...) {
-            logger.log(0, "Warning: can't make symbol {}, so get directly from solver", name);
+            logger.log(2, "Warning: can't make symbol {}, so get directly from solver", name);
             timed_v = solver_->get_symbol(name);
         }
         cache[v] = timed_v;

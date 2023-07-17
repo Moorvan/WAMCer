@@ -371,35 +371,24 @@ TEST(FSFold, fold2) {
 }
 
 TEST(TSFold, foldTest) {
-    logger.set_verbosity(1);
     auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
-//    BTOR2Encoder::decoder_with_constraint(path, ts, p);
-    BTOR2Encoder::decoder(path, ts, p);
+    BTOR2Encoder::decoder_with_constraint(path, ts, p);
     auto init = ts.init();
     auto unroller = Unroller(ts);
     auto folder_slv = SolverFactory::boolectorSolver();
     auto folder = TransitionFolder(ts, folder_slv);
     auto to_s = TermTranslator(s);
     auto out = Term();
-    for (auto i = 0; i <= 20; i++) {
-        for (auto term : ts.statevars()) {
-            unroller.at_time(term, i);
-        }
-    }
+    s->assert_formula(unroller.at_time(init, 0));
     auto f = [&](int t) {
         s->push();
-        s->assert_formula(unroller.at_time(init, 0));
-//    out = ts.trans();
         folder.getNStepTrans2(t, out, to_s);
-//    logger.log(0, "construct trans ok.");
         auto notP = s->make_term(Not, p);
-//        s->assert_formula(unroller.at_time(notP, t));
-//        s->assert_formula(out);
-        s->assert_formula(unroller.at_time(notP, 1));
-        s->assert_formula(unroller.at_time(out, 0));
+        s->assert_formula(unroller.at_time(notP, t));
+        s->assert_formula(out);
         if (s->check_sat().is_unsat()) {
             logger.log(0, "pass in {} step", t);
         } else {
@@ -407,10 +396,58 @@ TEST(TSFold, foldTest) {
         }
         s->pop();
     };
-    f(2);
-//    for (int i = 1; i <= 20; ++i) {
-//        f(i);
-//    }
+//    f(2);
+//    f(20);
+    for (int i = 1; i <= 20; ++i) {
+        f(i);
+    }
+}
+
+TEST(Direct, call) {
+    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/mann/data-integrity/unsafe/arbitrated_top_n3_w8_d128_e0.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    auto p = Term();
+    BTOR2Encoder::decoder_with_constraint(path, ts, p);
+    auto init = ts.init();
+    auto unroller = Unroller(ts);
+    s->assert_formula(unroller.at_time(init, 0));
+    auto f = [&](int t) {
+        for (int i = 0; i < t; i++) {
+            s->assert_formula(unroller.at_time(ts.trans(), i));
+        }
+        auto not_p = s->make_term(Not, p);
+        assert(t > 0);
+        auto not_p_s = s->make_term(false);
+        for (int i = 1; i <= t; i++) {
+            not_p_s = s->make_term(Or, not_p_s, unroller.at_time(not_p, i));
+        }
+        s->assert_formula(not_p_s);
+        if (s->check_sat().is_unsat()) {
+            logger.log(0, "pass in {} step", t);
+        } else {
+            logger.log(0, "Not pass in {} step", t);
+        }
+    };
+    f(26);
+}
+
+
+TEST(AAA, BBB) {
+    auto slv = SolverFactory::boolectorSolver();
+    auto f = [&] -> Term {
+        return slv->make_term(true);
+    };
+
+    auto b = f();
+    b = slv->make_term(And, b, slv->make_term(false));
+    logger.log(0, "a = {}", f());
+    logger.log(0, "b = {}", b);
+
+    auto a = std::unordered_map<int, int>();
+    a[1] = 2;
+    logger.log(0, "a = {}", a[1]);
+    logger.log(0, "a = {}", a[0]);
 }
 
 TEST(TSFold, BMCs) {
@@ -418,7 +455,6 @@ TEST(TSFold, BMCs) {
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
-//    BTOR2Encoder::decoder_with_constraint(path, ts, p);
     BTOR2Encoder::decoder(path, ts, p);
     auto bmc = BMCChecker(ts);
     auto f = [&](int i) {

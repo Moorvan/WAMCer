@@ -9,6 +9,7 @@
 #include "utils/logger.h"
 #include "utils/defines.h"
 #include "core/unroller.h"
+using namespace smt;
 
 namespace wamcer {
     class TransitionFolder {
@@ -20,6 +21,8 @@ namespace wamcer {
         void getNStepTrans2(int n, smt::Term &out_trans, smt::TermTranslator &translator);
 
         void foldToNStep(int n,  const std::function<void(int, const smt::Term &)>& add_trans);
+
+        void foldToNStep2(int n,  const std::function<void(int, const smt::Term &)>& add_trans);
 
     private:
         TransitionSystem ts;
@@ -34,11 +37,11 @@ namespace wamcer {
 
         TransitionSystem fold(const TransitionSystem &in, int x);
 
-//        TransitionSystem fold2(const TransitionSystem &in, int x);
+        Term fold2(const Term &in, int x);
 
         TransitionSystem add(const TransitionSystem &in1, const TransitionSystem &in2, int x1, int x2);
 
-//        TransitionSystem add2(const TransitionSystem &in1, const TransitionSystem &in2, int x1, int x2);
+        Term add2(const Term &in1, const Term &in2, int x1, int x2);
 
         void newTS(TransitionSystem &out);
 

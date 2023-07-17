@@ -8,6 +8,7 @@
 #include <thread>
 #include <atomic>
 #include <random>
+#include <set>
 #include "smt-switch/smt.h"
 #include "frontends/btor2_encoder.h"
 #include "engines/bmc.h"

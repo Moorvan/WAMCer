@@ -46,15 +46,15 @@ TEST(RunnerTests, runFBMCWithKInductionTrue) {
 }
 
 TEST(RunnerTests, runBMCWithFolder) {
-    logger.set_verbosity(2);
+    logger.set_verbosity(1);
 //    auto path = "../../btors/memory.btor2";
-    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/mann/data-integrity/unsafe/arbitrated_top_n3_w8_d16_e0.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
 
 //    auto path = "/Users/yuechen/Documents/study/btors/hwmccs/hwmcc20/btor2/bv/2019/wolf/2019A/picorv32_mutBY_nomem-p4.btor";
     auto res = Runner::runBMCWithFolder(path, BTOR2Encoder::decoder_with_constraint, []() {
         return SolverFactory::boolectorSolver();
-    }, 21, 8, 2);
-    ASSERT_TRUE(res);
+    }, 21, 3, 5);
+    ASSERT_FALSE(res);
 }
 
 TEST(RunnerTests, runBMCs) {
@@ -66,7 +66,7 @@ TEST(RunnerTests, runBMCs) {
     auto res = Runner::runBMCs(path, BTOR2Encoder::decoder, []() {
         return SolverFactory::boolectorSolver();
     }, 20, 5);
-//    ASSERT_FALSE(res);
+    ASSERT_FALSE(res);
 }
 
 TEST(RunnerTests, runBMCsInFile) {

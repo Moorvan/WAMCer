@@ -1,6 +1,4 @@
 //
-// Created by Morvan on 2022/7/2.
-//
 
 #include "runner.h"
 #include "solverFactory.h"
@@ -326,9 +324,11 @@ namespace wamcer {
         auto trans_mux = std::shared_mutex();
         auto trans = std::unordered_map<int, Term>();
         auto trans_slv = SolverFactory::boolectorSolver();
+//        auto left_steps = std::set<int, std::greater<>>();
         auto left_steps = std::unordered_set<int>();
         auto left_steps_mux = std::shared_mutex();
 
+        auto translator = TermTranslator(trans_slv);
         for (int i = 1; i <= bound; i++) {
             left_steps.insert(i);
         }
@@ -338,7 +338,6 @@ namespace wamcer {
             auto lck = std::unique_lock(trans_mux);
             auto lck2 = std::unique_lock(left_steps_mux);
             if (left_steps.find(i) != left_steps.end() && trans.find(i) == trans.end()) {
-                auto translator = TermTranslator(trans_slv);
                 auto trans_t = translator.transfer_term(t);
                 cnt++;
                 trans.insert({i, trans_t});
@@ -361,7 +360,7 @@ namespace wamcer {
             trans.erase(it.first);
             auto translator = TermTranslator(slv);
             it.second = translator.transfer_term(it.second);
-            logger.log(defines::logBMCWithFolderRunner, 2, "left trans size: {}", trans.size());
+            logger.log(defines::logBMCWithFolderRunner, 1, "!!left trans size: {}", trans.size());
             return it;
         };
         auto get_one_fold_step = [&]() -> int {
@@ -369,9 +368,11 @@ namespace wamcer {
             if (left_steps.empty()) {
                 return success;
             }
-            logger.log(defines::logBMCWithFolderRunner, 2, "left steps size: {}", left_steps.size());
+            logger.log(defines::logBMCWithFolderRunner, 1, "left steps size: {}", left_steps.size());
             int it;
             std::sample(left_steps.begin(), left_steps.end(), &it, 1, std::mt19937{std::random_device{}()});
+            // get largest in left_steps
+//            it = *left_steps.begin();
             return it;
         };
 
@@ -390,7 +391,7 @@ namespace wamcer {
                         return;
                     }
                     logger.log(defines::logBMCWithFolderRunner, 1, "folding to step {}", step);
-                    folder.foldToNStep(step, add_trans);
+                    folder.foldToNStep2(step, add_trans);
                 }
             });
             threads.push_back(std::move(t));
@@ -403,8 +404,21 @@ namespace wamcer {
                 auto ts = TransitionSystem(slv);
                 auto p = Term();
                 decoder(path, ts, p);
-                auto checker = BMCChecker(ts);
+                auto not_p = slv->make_term(Not, p);
+
+                auto unroller = Unroller(ts);
+                slv->assert_formula(unroller.at_time(ts.init(), 0));
+
+                auto check = [&](int t, const Term &trans) -> bool {
+                    slv->push();
+                    slv->assert_formula(trans);
+                    slv->assert_formula(unroller.at_time(not_p, t));
+                    auto res = slv->check_sat();
+                    slv->pop();
+                    return res.is_unsat();
+                };
                 while (true) {
+//                    auto checker = BMCChecker(ts);
                     {
                         auto lck = std::shared_lock(result_mux);
                         if (!result.first) {
@@ -421,7 +435,8 @@ namespace wamcer {
                         continue;
                     }
                     logger.log(defines::logBMCWithFolderRunner, 1, "checking step {}", t.first);
-                    if (checker.check(t.second, p)) {
+//                    if (checker.check(t.second, p, t.first)) {
+                    if (check(t.first, t.second)) {
                         logger.log(defines::logBMCWithFolderRunner, 1, "safe at {} step", t.first);
                     } else {
                         logger.log(defines::logBMCWithFolderRunner, 1, "unsafe at {} step", t.first);
@@ -471,9 +486,10 @@ namespace wamcer {
         }
     }
 
-    bool Runner::runBMCs(std::string path, const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
-                        const std::function<smt::SmtSolver()> &solverFactory,
-                        int bound, int threadCnt) {
+    bool
+    Runner::runBMCs(std::string path, const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                    const std::function<smt::SmtSolver()> &solverFactory,
+                    int bound, int threadCnt) {
         const int failed = -1;
         const int success = -2;
         const int unknown = -3;

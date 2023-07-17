@@ -50,6 +50,8 @@ namespace wamcer {
          */
         virtual smt::Term at_time(const smt::Term &t, unsigned int k);
 
+        smt::Term move_time(const smt::Term &t, int l0, int r0, int l1, int r1);
+
         smt::Term untime(const smt::Term &t) const;
 
         /** Returns the time of an unrolled variable
@@ -89,7 +91,8 @@ namespace wamcer {
         smt::UnorderedTermMap untime_cache_;
         std::unordered_map<smt::Term, size_t> var_times_;
 
-        size_t num_vars_;  ///< the last known number of variables in the transition
+        size_t num_vars_;
+        ///< the last known number of variables in the transition
         ///< system
 
     };  // class Unroller

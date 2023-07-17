@@ -100,17 +100,59 @@ void simulate() {
  */
 
 int main(int argc, char *argv[]) {
+    logger.set_verbosity(1);
     auto parser = cmdline::parser();
     parser.add<string>("btor2", 'b', "btor file path", true);
+    parser.add<string>("algorithm", 'a', "algorithm", false, "fbmc");
     parser.parse_check(argc, argv);
     auto btor2_path = parser.get<string>("btor2");
-//    logger.set_verbosity(2);
-    auto res = Runner::runBMCs(btor2_path, BTOR2Encoder::decoder, []() {
-        return SolverFactory::boolectorSolver();
-    }, 20, 5);
-    if (res) {
-        cout << "res: safe" << endl;
-    } else {
-        cout << "res: unsafe" << endl;
+    auto algorithm = parser.get<string>("algorithm");
+
+    if (algorithm == "fbmc") {
+        auto res = Runner::runBMCWithFolder(btor2_path, BTOR2Encoder::decoder, []() {
+            return SolverFactory::boolectorSolver();
+        }, 26, 4, 5);
+        if (res) {
+            cout << "res: safe" << endl;
+        } else {
+            cout << "res: unsafe" << endl;
+        }
+    } else if (algorithm == "bmc") {
+        auto path = btor2_path;
+        auto s = SolverFactory::boolectorSolver();
+        auto ts = TransitionSystem(s);
+        auto p = Term();
+        BTOR2Encoder::decoder_with_constraint(path, ts, p);
+        auto init = ts.init();
+        auto unroller = Unroller(ts);
+        s->assert_formula(unroller.at_time(init, 0));
+        auto f = [&](int t) {
+            for (int i = 0; i < t; i++) {
+                s->assert_formula(unroller.at_time(ts.trans(), i));
+            }
+            auto not_p = s->make_term(Not, p);
+            assert(t > 0);
+            auto not_p_s = s->make_term(false);
+            for (int i = 1; i <= t; i++) {
+                not_p_s = s->make_term(Or, not_p_s, unroller.at_time(not_p, i));
+            }
+            s->assert_formula(not_p_s);
+            if (s->check_sat().is_unsat()) {
+                logger.log(0, "pass in {} step", t);
+            } else {
+                logger.log(0, "Not pass in {} step", t);
+            }
+        };
+        f(26);
+    } else if (algorithm == "bmcs") {
+        logger.set_verbosity(2);
+        auto res = Runner::runBMCs(btor2_path, BTOR2Encoder::decoder, []() {
+            return SolverFactory::boolectorSolver();
+        }, 26, 5);
+        if (res) {
+            cout << "res: safe" << endl;
+        } else {
+            cout << "res: unsafe" << endl;
+        }
     }
 }

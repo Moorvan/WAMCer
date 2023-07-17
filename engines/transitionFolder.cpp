@@ -9,13 +9,13 @@
 namespace wamcer {
 
     TransitionFolder::TransitionFolder(TransitionSystem &ts, const smt::SmtSolver &folderSolver)
-            : slv(folderSolver), to_slv(folderSolver), ts(folderSolver), unroller(this->ts){
+            : slv(folderSolver), to_slv(folderSolver), ts(folderSolver), unroller(this->ts) {
         this->ts = TransitionSystem(ts, to_slv);
         updates = this->ts.state_updates();
         this->trans.resize(2);
         maxTime = 1;
         original_inputs = this->ts.inputvars();
-        this->trans[1] = this->ts.trans();
+        this->trans[1] = unroller.at_time(this->ts.trans(), 0);
     }
 
     void TransitionFolder::getNStepTrans(int n, smt::Term &trans_out, smt::TermTranslator &translator) {
@@ -29,7 +29,6 @@ namespace wamcer {
         auto x = TransitionSystem(slv);
         newTS(x);
         x = add(x, ts, 0, 1);
-//        x = ts;
         auto cur_x = 1, cur_out = 0;
         for (auto i = n; i > 0; i = i / 2) {
             logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i + 1, n);
@@ -50,33 +49,34 @@ namespace wamcer {
         trans_out = translator.transfer_term(out.trans());
     }
 
-    // n >= 1
-    void TransitionFolder::getNStepTrans2(int n, smt::Term &out_trans, smt::TermTranslator &translator) {
-//        auto trans = ts.trans();
-//        out_trans = unroller.at_time(trans, 0);
-//        for (int i = 1; i < n; i++) {
-//            out_trans = slv->make_term(smt::And, out_trans, unroller.at_time(trans, i));
-//        }
-//        out_trans = translator.transfer_term(out_trans);
 
-        auto out = TransitionSystem(slv);
-        newTS(out);
-        auto update = ts.state_updates();
-        for (auto &kv: update) {
-            out.assign_next(kv.first, kv.second);
+    void TransitionFolder::getNStepTrans2(int n, Term &trans_out, TermTranslator &translator) {
+        if (n < trans.size() && trans[n] != nullptr) {
+            trans_out = translator.transfer_term(trans[n]);
+            return;
         }
-        for (int i = 1; i < n; i++) {
-            auto x = TransitionSystem(slv);
-            newTS(x);
-            for (auto &kv: out.state_updates()) {
-                auto foldTerm = slv->substitute(kv.second, update);
-                x.assign_next(kv.first, foldTerm);
+        this->trans.resize(n + 1);
+        auto out = ts.make_term(true);
+        auto x = unroller.at_time(ts.trans(), 0);
+        auto cur_x = 1, cur_out = 0;
+        for (auto i = n; i > 0; i = i / 2) {
+            logger.log(defines::logTransitionFolder, 1, "folding process {}/{}", n - i + 1, n);
+            if (i % 2 == 1) {
+                out = add2(out, x, cur_out, cur_x);
+                cur_out += cur_x;
+                this->trans[cur_out] = out;
             }
-            out = x;
+            if (i == 1) {
+                break;
+            }
+            x = fold2(x, cur_x);
+            cur_x *= 2;
+            if (cur_x < n) {
+                this->trans[cur_x] = x;
+            }
         }
-        out_trans = translator.transfer_term(out.trans());
+        trans_out = translator.transfer_term(out);
     }
-
 
 
     void TransitionFolder::foldToNStep(int n, const std::function<void(int, const smt::Term &)> &add_trans) {
@@ -105,6 +105,30 @@ namespace wamcer {
         add_trans(n, out.trans());
     }
 
+    void TransitionFolder::foldToNStep2(int n, const std::function<void(int, const smt::Term &)> &add_trans) {
+        auto out = ts.make_term(true);
+        auto x = unroller.at_time(ts.trans(), 0);
+        auto cur_x = 1, cur_out = 0;
+        for (auto i = n; i > 0; i = i / 2) {
+            logger.log(defines::logTransitionFolder, 2, "folding process {}/{}", n - i + 1, n);
+            if (i % 2 != 0) {
+                out = add2(out, x, cur_out, cur_x);
+                cur_out += cur_x;
+                add_trans(cur_out, out);
+            }
+            if (i == 1) {
+                break;
+            }
+            x = fold2(x, cur_x);
+            cur_x *= 2;
+            if (cur_x < n) {
+                add_trans(cur_x, x);
+            }
+        }
+        add_trans(n, out);
+    }
+
+
     TransitionSystem TransitionFolder::fold(const TransitionSystem &in, int x) {
         addInputsTo(2 * x);
         auto out = TransitionSystem(slv);
@@ -123,6 +147,11 @@ namespace wamcer {
         return out;
     }
 
+    Term TransitionFolder::fold2(const smt::Term &in, int x) {
+        auto in2 = unroller.move_time(in, 0, x, x, 2 * x);
+        return slv->make_term(And, in, in2);
+    }
+
     TransitionSystem TransitionFolder::add(const TransitionSystem &in1, const TransitionSystem &in2, int x1, int x2) {
         addInputsTo(x1 + x2);
         auto out = TransitionSystem(slv);
@@ -139,12 +168,17 @@ namespace wamcer {
                 out.assign_next(kv.first, foldTerm);
             }
         } else {
-            for (const auto& kv : update) {
+            for (const auto &kv: update) {
                 out.assign_next(kv.first, kv.second);
             }
         }
 
         return out;
+    }
+
+    Term TransitionFolder::add2(const smt::Term &in1, const smt::Term &in2, int x1, int x2) {
+        auto in2_2 = unroller.move_time(in2, 0, x2, x1, x1 + x2);
+        return slv->make_term(And, in1, in2_2);
     }
 
     void TransitionFolder::newTS(TransitionSystem &out) {
