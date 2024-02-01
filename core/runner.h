@@ -59,11 +59,16 @@ namespace wamcer {
                   const std::function<void(TransitionSystem&, Term&, AsyncTermSet&, SmtSolver&)>& gen,
                   int bound = -1);
 
+        static bool
+        runPIBMC(std::string path, const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
+                 const std::function<smt::SmtSolver()> &solverFactory, int bound = -1);
+
     private:
         static bool checkInv(std::string path,
                              const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder,
                              const Term& inv,
                              int bound);
+
     };
 }
 

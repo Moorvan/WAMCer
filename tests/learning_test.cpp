@@ -204,3 +204,18 @@ TEST(CaseLearning, Buffer) {
         }
     }
 }
+
+TEST(ABC, atomic) {
+    auto complete = std::atomic<bool>(false);
+    auto t = std::thread([&]() {
+        complete.notify_all();
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        complete = true;
+        complete.notify_all();
+    });
+
+    complete.wait(false);
+    logger.log(0, "wait complete");
+    t.join();
+    logger.log(0, "complete: {}", complete.load());
+}

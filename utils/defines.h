@@ -13,6 +13,7 @@ namespace defines {
     const auto logPredCP = "[PredCP]: ";
     const auto logSim = "[BtorSim]: ";
     const auto logBMC = "[BMC]: ";
+    const auto logInterpolantBMC = "[InterpolantBMC]: ";
     const auto logKind = "[K-Induction]: ";
     const auto logEasyPDR = "[EasyPDR]: ";
     const auto logBMCRunner = "[BMC Runner]: ";

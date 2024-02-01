@@ -9,7 +9,7 @@
 namespace wamcer {
 
     TransitionFolder::TransitionFolder(TransitionSystem &ts, const smt::SmtSolver &folderSolver)
-            : slv(folderSolver), to_slv(folderSolver), ts(folderSolver), unroller(this->ts){
+            : slv(folderSolver), to_slv(folderSolver), ts(folderSolver), unroller(this->ts) {
         this->ts = TransitionSystem(ts, to_slv);
         updates = this->ts.state_updates();
         this->trans.resize(2);
@@ -65,18 +65,32 @@ namespace wamcer {
         for (auto &kv: update) {
             out.assign_next(kv.first, kv.second);
         }
+        addInputsTo(n);
+
+        auto f = [&](smt::Term t, int n) -> smt::Term {
+            auto mp = smt::UnorderedTermMap();
+            for (const auto &v: original_inputs) {
+                mp[v] = varAtTime(v, n);
+            }
+            return slv->substitute(t, mp);
+        };
+
         for (int i = 1; i < n; i++) {
             auto x = TransitionSystem(slv);
             newTS(x);
+            auto new_update = smt::UnorderedTermMap();
+            for (auto &kv: update) {
+                new_update[kv.first] = f(kv.second, i);
+                new_update[kv.first] = kv.second;
+            }
             for (auto &kv: out.state_updates()) {
-                auto foldTerm = slv->substitute(kv.second, update);
+                auto foldTerm = slv->substitute(kv.second, new_update);
                 x.assign_next(kv.first, foldTerm);
             }
             out = x;
         }
         out_trans = translator.transfer_term(out.trans());
     }
-
 
 
     void TransitionFolder::foldToNStep(int n, const std::function<void(int, const smt::Term &)> &add_trans) {
@@ -139,7 +153,7 @@ namespace wamcer {
                 out.assign_next(kv.first, foldTerm);
             }
         } else {
-            for (const auto& kv : update) {
+            for (const auto &kv: update) {
                 out.assign_next(kv.first, kv.second);
             }
         }
@@ -167,6 +181,7 @@ namespace wamcer {
                 mp[varAtTime(v, i)] = varAtTime(v, start + i);
             }
         }
+//        return in;
         return slv->substitute(std::move(in), mp);
     }
 

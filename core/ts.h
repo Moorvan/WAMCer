@@ -27,6 +27,9 @@ namespace wamcer {
 
     class TransitionSystem {
     public:
+
+        TransitionSystem() {};
+
         TransitionSystem(const smt::SmtSolver &s)
                 : solver_(s),
                   init_(s->make_term(true)),

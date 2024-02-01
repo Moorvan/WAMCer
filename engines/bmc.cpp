@@ -77,6 +77,16 @@ namespace wamcer {
             return false;
         } else {
             logger.log(defines::logBMC, 2, "init0 /\\ trans...{} /\\ bad{} is unsat.", n, n);
+            // new code begin
+            auto out = UnorderedTermSet();
+            solver->get_unsat_assumptions(out);
+            auto tv = TermVec();
+            for (auto t : out) {
+                logger.log(0, "unsat assumption: {}", t);
+                tv.push_back(t);
+            }
+            property = solver->make_term(And, tv);
+            // new code end
             return true;
         }
     }

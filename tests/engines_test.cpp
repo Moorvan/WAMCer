@@ -4,8 +4,6 @@
 
 #include <gtest/gtest.h>
 #include <core/runner.h>
-#include "core/solverFactory.h"
-#include <engines/k_induction.h>
 #include "engines/pdr.h"
 #include "engines/fbmc.h"
 #include "engines/DirectConstructor.h"
@@ -13,6 +11,8 @@
 #include "engines/InductionProver.h"
 #include "engines/InvConstructor.h"
 #include "engines/transitionFolder.h"
+#include "engines/AutoRestartBMC.h"
+#include "engines/InterpolantBmc.h"
 #include "smt-switch/boolector_factory.h"
 #include "smt-switch/bitwuzla_factory.h"
 #include <thread>
@@ -371,50 +371,74 @@ TEST(FSFold, fold2) {
 }
 
 TEST(TSFold, foldTest) {
-    logger.set_verbosity(1);
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+    logger.set_verbosity(0);
+//    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
 //    BTOR2Encoder::decoder_with_constraint(path, ts, p);
     BTOR2Encoder::decoder(path, ts, p);
-    auto init = ts.init();
-    auto unroller = Unroller(ts);
-    auto folder_slv = SolverFactory::boolectorSolver();
-    auto folder = TransitionFolder(ts, folder_slv);
-    auto to_s = TermTranslator(s);
-    auto out = Term();
-    for (auto i = 0; i <= 20; i++) {
-        for (auto term : ts.statevars()) {
-            unroller.at_time(term, i);
-        }
-    }
-    auto f = [&](int t) {
-        s->push();
-        s->assert_formula(unroller.at_time(init, 0));
-//    out = ts.trans();
-        folder.getNStepTrans2(t, out, to_s);
-//    logger.log(0, "construct trans ok.");
-        auto notP = s->make_term(Not, p);
-//        s->assert_formula(unroller.at_time(notP, t));
-//        s->assert_formula(out);
-        s->assert_formula(unroller.at_time(notP, 1));
-        s->assert_formula(unroller.at_time(out, 0));
-        if (s->check_sat().is_unsat()) {
-            logger.log(0, "pass in {} step", t);
+//    counter(ts, p);
+
+    auto n_step = 20;
+
+    logger.log(0, "------------btor status-----------");
+    logger.log(0, "constraints size: {}", ts.constraints().size());
+    logger.log(0, "input size: {}", ts.inputvars().size());
+    logger.log(0, "state size: {}", ts.statevars().size());
+    logger.log(0, "------------btor status end-----------");
+
+    logger.log(0, "-------------bmc check----------");
+
+    auto s1 = SolverFactory::boolectorSolver();
+    auto ts1 = TransitionSystem(s1);
+    auto p1 = Term();
+    BTOR2Encoder::decoder(path, ts1, p1);
+    auto bmc = BMCChecker(ts1);
+    auto bmcf = [&](int i) {
+        if (bmc.check(i, p1)) {
+            logger.log(0, "bmc pass in {} step.", i);
         } else {
-            logger.log(0, "Not pass in {} step", t);
+            logger.log(0, "bmc unpass at {} step", i);
         }
-        s->pop();
     };
-    f(2);
-//    for (int i = 1; i <= 20; ++i) {
+    for (auto i = 0; i <= n_step; i++) {
+        bmcf(i);
+    }
+//    bmcf(32);
+    logger.log(0, "-------------bmc check end----------");
+
+
+//    auto init = ts.init();
+//    auto unroller = Unroller(ts);
+//    auto folder_slv = SolverFactory::boolectorSolver();
+//    auto folder = TransitionFolder(ts, folder_slv);
+//    auto to_s = TermTranslator(s);
+//    auto out = Term();
+//
+//    s->assert_formula(unroller.at_time(init, 0));
+//    auto f = [&](int t) {
+//        s->push();
+//        folder.getNStepTrans(t, out, to_s);
+//        auto notP = s->make_term(Not, p);
+//        s->assert_formula(unroller.at_time(out, 0));
+//        s->assert_formula(unroller.at_time(notP, 1));
+//        if (s->check_sat().is_unsat()) {
+//            logger.log(0, "pass in {} step", t);
+//        } else {
+//            logger.log(0, "Not pass in {} step", t);
+//        }
+//        s->pop();
+//    };
+//    f(32);
+//    for (int i = 1; i <= n_step; ++i) {
 //        f(i);
 //    }
 }
 
 TEST(TSFold, BMCs) {
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
     auto p = Term();
@@ -429,16 +453,32 @@ TEST(TSFold, BMCs) {
         }
     };
     // I0 and T01 and T12 ... T19-20 and not P20
-    for (int i = 1; i <= 20; i++) {
-        f(i);
-    }
+    f(20);
+//    for (int i = 1; i <= 20; i++) {
+//        f(i);
+//    }
 
 }
 
-TEST(TSFold, foldBench) {
-    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+TEST(BMC, BMC) {
+    logger.set_verbosity(2);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
     auto s = SolverFactory::boolectorSolver();
     auto ts = TransitionSystem(s);
+    auto p = Term();
+//    BTOR2Encoder::decoder_with_constraint(path, ts, p);
+    BTOR2Encoder::decoder(path, ts, p);
+
+    auto bmc = BMC(ts, p);
+    bmc.run(20);
+}
+
+TEST(TSFold, foldBench) {
+//    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/hwmcc/arbitrated_top_n3_w8_d16_e0.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
+    auto s = SolverFactory::boolectorSolver();
+    auto ts = TransitionSystem(s);
+    logger.log(0, "ts inputs size: {}", ts.inputvars().size());
     auto p = Term();
     BTOR2Encoder::decoder_with_constraint(path, ts, p);
 //    BTOR2Encoder::decoder(path, ts, p);
@@ -457,7 +497,10 @@ TEST(TSFold, foldBench) {
     auto out = Term();
     s->assert_formula(unroller.at_time(init, 0));
 //    out = ts.trans();
-    folder.getNStepTrans(3, out, to_s);
+//    for (int i = 1; i <= 20; i++) {
+    folder.getNStepTrans(20, out, to_s);
+//        logger.log(0, "ok {} step fold", i);
+//    }
     logger.log(0, "construct trans ok.");
     s->assert_formula(unroller.at_time(out, 0));
     auto notP = s->make_term(Not, p);
@@ -735,13 +778,13 @@ TEST(TestBMC, bmc) {
             exit(1);
         }
     };
-    for (auto i = 0; i < 100; i++) {
-        f();
-    }
+//    for (auto i = 0; i < 100; i++) {
+//        f();
+//    }
 }
 
 TEST(TestBMC, bmcBug) {
-    auto path = "../../btors/memory.btor2";
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
     auto f = [&] {
         auto s = SolverFactory::boolectorSolver();
         auto ts = TransitionSystem(s);
@@ -761,4 +804,110 @@ TEST(TestBMC, bmcBug) {
     for (auto i = 0; i < 100; i++) {
         f();
     }
+}
+
+TEST(TestBMC, BMC) {
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
+    auto f = [&](int step) {
+        assert(step >= 0);
+        auto slv = SolverFactory::cvc5Solver();
+        slv->set_opt("produce-unsat-assumptions", "true");
+        auto ts = TransitionSystem(slv);
+        auto unroller = Unroller(ts);
+        auto p = Term();
+        BTOR2Encoder::decoder(path, ts, p);
+        slv->assert_formula(unroller.at_time(ts.init(), 0));
+        auto terms = TermVec();
+        for (int i = 0; i < step; i++) {
+            terms.push_back(unroller.at_time(ts.trans(), i));
+//            slv->assert_formula(unroller.at_time(ts.trans(), i));
+        }
+        auto notP = slv->make_term(Not, p);
+        auto nextNotP = slv->make_term(Not, unroller.at_time(p, step));
+        terms.push_back(nextNotP);
+        auto res = slv->check_sat_assuming(terms);
+        if (res.is_unsat()) {
+            logger.log(0, "bmc pass in step {}.", step);
+        } else {
+            logger.log(0, "bmc unpass in step {}.", step);
+        }
+        auto core = UnorderedTermSet();
+        slv->get_unsat_assumptions(core);
+        logger.log(0, "core size: {}", core.size());
+        for (auto &t : core) {
+            logger.log(0, "core: {}", t);
+        }
+
+    };
+    f(1);
+//    for (auto i = 1; i < 10; i++) {
+//        f(i);
+//    }
+}
+
+TEST(UNSAT_CORE, Unsat) {
+    auto s = SolverFactory::cvc5Solver();
+    s->set_opt("produce-unsat-assumptions", "true");
+    auto x = s->make_symbol("x", s->make_sort(BV, 8));
+
+    auto p0 = s->make_term(Equal, x, s->make_term(1, s->make_sort(BV, 8)));
+    auto p1 = s->make_term(Equal, x, s->make_term(2, s->make_sort(BV, 8)));
+//    s->assert_formula(s->make_term(Equal, x, s->make_term(1, s->make_sort(BV, 8))));
+    // x = 1
+//    s->assert_formula()
+
+    auto pred = s->make_term(BVUgt, x, s->make_term(10, s->make_sort(BV, 8)));
+    // x > 10
+    auto notPrep = s->make_term(Not, pred);
+    // x > 10
+    auto res = s->check_sat_assuming({p0, p1, pred});
+//    auto res = s->check_sat_assuming({s->make_term(false)});
+//
+    if (res.is_unsat()) {
+        logger.log(0, "unsat");
+        auto out = UnorderedTermSet();
+        s->get_unsat_assumptions(out);
+        for (auto &c: out) {
+            logger.log(0, "{}", c->to_string());
+        }
+    } else {
+        logger.log(0, "sat");
+    }
+}
+
+TEST(RestartBMC, bmc) {
+    logger.set_verbosity(1);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
+    auto bmc = AutoRestartBMC(path, BTOR2Encoder::decoder, []() -> SmtSolver {
+        return SolverFactory::boolectorSolver();
+
+    });
+    for (int i = 0; i <= 20; i++) {
+        if (i % 4 == 0) {
+            bmc.restart();
+        }
+        bmc.check(i);
+    }
+}
+
+TEST(InterpolantBMC, bmc) {
+    logger.set_verbosity(1);
+    auto path = "/Users/yuechen/Developer/clion-projects/WAMCer/btors/cpu/testbench.btor2";
+    auto imc = InterpolantBmc(path, BTOR2Encoder::decoder, []() -> SmtSolver {
+        return SolverFactory::cvc5Solver();
+    });
+    auto it = Term();
+    auto res = imc.getInterpolant(1, it);
+    if (res.is_unsat()) {
+        logger.log(0, "unsat");
+    } else if (res.is_sat()) {
+        logger.log(0, "sat");
+    } else if (res.is_unknown()) {
+        logger.log(0, "unknown");
+    }
+
+//    logger.log(0, "interpolant: {}", it->to_string());
+//    for (int i = 0; i < 3; i++) {
+//        imc.bmc(it, 3, i);
+//    }
 }

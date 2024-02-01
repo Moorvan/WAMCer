@@ -32,7 +32,7 @@ add_library(WAMCer-lib
         engines/InvConstructor.cpp
         engines/transitionFolder.cpp
         engines/PredCP.cpp
-        engines/PredCP.h)
+        engines/PredCP.h engines/AutoRestartBMC.cpp engines/AutoRestartBMC.h engines/InterpolantBmc.cpp engines/InterpolantBmc.h)
 
 
 # link smt-switch and gmp, or boost

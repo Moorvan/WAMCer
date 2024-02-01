@@ -372,6 +372,7 @@ namespace wamcer {
             logger.log(defines::logBMCWithFolderRunner, 2, "left steps size: {}", left_steps.size());
             int it;
             std::sample(left_steps.begin(), left_steps.end(), &it, 1, std::mt19937{std::random_device{}()});
+            logger.log(defines::logBMCWithFolderRunner, 0, "sampled step: {}", it);
             return it;
         };
 
@@ -530,5 +531,27 @@ namespace wamcer {
         } else {
             return true;
         }
+    }
+
+    bool
+    Runner::runPIBMC(std::string path, const std::function<void(std::string &, TransitionSystem &, Term &)> &decoder, const std::function<smt::SmtSolver()> &solverFactory, int bound) {
+        auto safe_step = std::atomic<int>(-1);
+        auto complete = std::atomic<bool>(false);
+        auto bmc_thread = std::thread([&]() {
+            auto slv = solverFactory();
+            auto ts = TransitionSystem(slv);
+            auto p = Term();
+            decoder(path, ts, p);
+            
+        });
+        auto interpolant_thread = std::thread([&]() {
+            auto slv = solverFactory();
+            // TODO something
+        });
+
+        complete.wait(false);
+        bmc_thread.detach();
+        interpolant_thread.detach();
+        return true;
     }
 }
